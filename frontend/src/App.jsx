@@ -13,6 +13,9 @@ import { Layout } from './components/Layout.jsx'
 import NewPatientPage from './pages/NewPatientPage.jsx'
 import AppointmentsPage from './pages/AppointmentsPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
+import VerifyEmailPage from './pages/VerifyEmailPage.jsx' // Import
+import OnboardingPage from './pages/OnboardingPage.jsx' // Import
+import { ProtectedRoute } from './components/ProtectedRoute.jsx' // Import
 
 function App() {
   const [session, setSession] = useState(null)
@@ -47,18 +50,30 @@ function App() {
           path="/login"
           element={!session ? <LoginPage /> : <Navigate to="/dashboard" />}
         />
+        <Route
+          path="/verify-email"
+          element={!session ? <VerifyEmailPage /> : <Navigate to="/dashboard" />}
+        />
+
+        {/* Dashboard (Metrics) */}
+        <Route
+          path="/onboarding"
+          element={
+            <ProtectedRoute>
+              <OnboardingPage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Dashboard (Metrics) */}
         <Route
           path="/dashboard"
           element={
-            session ? (
+            <ProtectedRoute>
               <Layout>
                 <DashboardPage />
               </Layout>
-            ) : (
-              <Navigate to="/login" />
-            )
+            </ProtectedRoute>
           }
         />
 
@@ -66,26 +81,22 @@ function App() {
         <Route
           path="/patients"
           element={
-            session ? (
+            <ProtectedRoute>
               <Layout>
                 <PatientsPage />
               </Layout>
-            ) : (
-              <Navigate to="/login" />
-            )
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/sessions"
           element={
-            session ? (
+            <ProtectedRoute>
               <Layout>
                 <SessionsPage />
               </Layout>
-            ) : (
-              <Navigate to="/login" />
-            )
+            </ProtectedRoute>
           }
         />
 
@@ -93,74 +104,62 @@ function App() {
         <Route
           path="/appointments"
           element={
-            session ? (
+            <ProtectedRoute>
               <Layout>
                 <AppointmentsPage />
               </Layout>
-            ) : (
-              <Navigate to="/login" />
-            )
+            </ProtectedRoute>
           }
         />
         <Route
           path="/settings"
           element={
-            session ? (
+            <ProtectedRoute>
               <Layout>
                 <SettingsPage />
               </Layout>
-            ) : (
-              <Navigate to="/login" />
-            )
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/patient/new"
           element={
-            session ? (
+            <ProtectedRoute>
               <Layout>
                 <NewPatientPage />
               </Layout>
-            ) : (
-              <Navigate to="/login" />
-            )
+            </ProtectedRoute>
           }
         />
         <Route
           path="/patient/:id/edit"
           element={
-            session ? (
+            <ProtectedRoute>
               <Layout>
                 <EditPatientPage />
               </Layout>
-            ) : (
-              <Navigate to="/login" />
-            )
+            </ProtectedRoute>
           }
         />
         <Route
           path="/patient/:id"
           element={
-            session ? (
+            <ProtectedRoute>
               <Layout>
                 <PatientPage />
               </Layout>
-            ) : (
-              <Navigate to="/login" />
-            )
+            </ProtectedRoute>
           }
         />
         <Route
           path="/session/:id"
           element={
-            session ? (
+            <ProtectedRoute>
               <Layout>
                 <SessionPage />
               </Layout>
-            ) : (
-              <Navigate to="/login" />
-            )
+            </ProtectedRoute>
           }
         />
         <Route

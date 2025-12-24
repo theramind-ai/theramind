@@ -101,6 +101,9 @@ CREATE POLICY "Users can insert their own messages" ON copilot_messages FOR INSE
 -- PROFILES
 CREATE TABLE IF NOT EXISTS profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    name TEXT,
+    crp TEXT,
+    recovery_email TEXT,
     pix_key TEXT,
     pix_key_type TEXT, -- 'CPF', 'EMAIL', 'PHONE', 'RANDOM', etc.
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

@@ -26,11 +26,11 @@ export default function LoginPage() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/login`
+            emailRedirectTo: `${window.location.origin}/verify-email`
           }
         })
         if (error) throw error
-        setError('Conta criada com sucesso! Você já pode fazer login.')
+        navigate('/verify-email') // Redirect to verification page
       }
     } catch (err) {
       setError(err?.message ?? 'Erro ao autenticar')
