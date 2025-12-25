@@ -226,7 +226,7 @@ def generate_clinical_record_content(session_data: Dict[str, Any], patient_data:
     import json
     return json.loads(response.choices[0].message.content)
 
-def generate_clinical_record_pdf(record_data: Dict[str, Any], patient_data: Dict[str, Any], session_date: str) -> bytes:
+def generate_clinical_record_pdf(record_data: Dict[str, Any], patient_data: Dict[str, Any], session_date: str, therapist_data: Dict[str, Any] = None) -> bytes:
     """Generates the PDF file for the clinical record."""
     from reportlab.lib.pagesizes import letter
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
@@ -274,8 +274,23 @@ def generate_clinical_record_pdf(record_data: Dict[str, Any], patient_data: Dict
         elements.append(Paragraph(content.replace('\n', '<br/>'), text_style))
         elements.append(Spacer(1, 10))
         
-    # Signature
+    # Therapist Info & Signature
     elements.append(Spacer(1, 30))
+    
+    if therapist_data:
+        therapist_name = therapist_data.get('name') or "Terapeuta"
+        therapist_crp = therapist_data.get('crp') or ""
+        therapist_email = therapist_data.get('recovery_email') or therapist_data.get('email') or ""
+        
+        details = [f"<b>{therapist_name}</b>"]
+        if therapist_crp:
+            details.append(f"CRP: {therapist_crp}")
+        if therapist_email:
+            details.append(therapist_email)
+            
+        elements.append(Paragraph("<br/>".join(details), text_style))
+        elements.append(Spacer(1, 15))
+
     elements.append(Paragraph("_______________________________", text_style))
     elements.append(Paragraph("Assinatura do Profissional", text_style))
     

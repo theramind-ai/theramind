@@ -548,6 +548,16 @@ async def get_session_record(
     if not patient.data or patient.data["user_id"] != user.user_id:
         raise HTTPException(status_code=403, detail="Acesso negado")
 
+    # Fetch Therapist Data
+    therapist = (
+        supabase.table("profiles")
+        .select("*")
+        .eq("id", user.user_id)
+        .single()
+        .execute()
+    )
+    therapist_data = therapist.data if therapist.data else {}
+
     try:
         content = generate_clinical_record_content(
             session_data=session.data,
@@ -561,7 +571,8 @@ async def get_session_record(
         pdf_bytes = generate_clinical_record_pdf(
             record_data=content,
             patient_data=patient.data,
-            session_date=datetime.fromisoformat(session.data["created_at"]).strftime("%d/%m/%Y")
+            session_date=datetime.fromisoformat(session.data["created_at"]).strftime("%d/%m/%Y"),
+            therapist_data=therapist_data
         )
         
         return Response(

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export function ThemeSwitch() {
   const [isDark, setIsDark] = useState(() => {
@@ -14,7 +14,7 @@ export function ThemeSwitch() {
   })
 
   // Efeito para aplicar a classe e salvar no localStorage
-  useState(() => {
+  useEffect(() => {
     if (isDark) {
       document.documentElement.classList.add('dark')
       localStorage.setItem('theme', 'dark')
@@ -22,7 +22,7 @@ export function ThemeSwitch() {
       document.documentElement.classList.remove('dark')
       localStorage.setItem('theme', 'light')
     }
-  }, [isDark]) // Dependência é isDark
+  }, [isDark])
 
   const toggleTheme = () => {
     const newIsDark = !isDark

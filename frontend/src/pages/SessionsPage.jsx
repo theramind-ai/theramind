@@ -67,36 +67,36 @@ export default function SessionsPage() {
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <h1 className="text-2xl font-bold text-gray-900 mb-8">Últimas Sessões</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">Últimas Sessões</h1>
 
             {loading ? (
                 <div className="flex items-center justify-center h-64">
                     <div className="text-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-                        <p className="mt-4 text-gray-600">Carregando sessões...</p>
+                        <p className="mt-4 text-gray-600 dark:text-gray-400">Carregando sessões...</p>
                     </div>
                 </div>
             ) : error ? (
                 <div className="text-red-600">{error}</div>
             ) : sessions.length === 0 ? (
-                <div className="text-center text-gray-500 py-12">Nenhuma sessão registrada.</div>
+                <div className="text-center text-gray-500 dark:text-gray-400 py-12">Nenhuma sessão registrada.</div>
             ) : (
-                <div className="bg-white shadow overflow-hidden sm:rounded-md">
-                    <ul className="divide-y divide-gray-200">
+                <div className="bg-white dark:bg-slate-800 shadow overflow-hidden sm:rounded-md transition-colors">
+                    <ul className="divide-y divide-gray-200 dark:divide-slate-700">
                         {sessions.map((session) => (
-                            <li key={session.id} className="px-4 py-4 sm:px-6 hover:bg-gray-50 cursor-pointer" onClick={() => navigate(`/patient/${session.patient_id}`)}>
+                            <li key={session.id} className="px-4 py-4 sm:px-6 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer transition-colors" onClick={() => navigate(`/patient/${session.patient_id}`)}>
                                 <div className="flex items-center justify-between">
-                                    <div className="text-sm font-medium text-blue-600 truncate">
+                                    <div className="text-sm font-medium text-blue-600 dark:text-blue-400 truncate">
                                         {session.patient_name}
                                     </div>
                                     <div className="ml-2 flex-shrink-0 flex">
-                                        <p className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                        <p className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
                                             {new Date(session.created_at).toLocaleDateString()}
                                         </p>
                                     </div>
                                 </div>
                                 <div className="mt-1">
-                                    <p className="text-sm text-gray-900 line-clamp-2">{session.summary || "Sem resumo disponível"}</p>
+                                    <p className="text-sm text-gray-900 dark:text-gray-300 line-clamp-2">{session.summary || "Sem resumo disponível"}</p>
                                 </div>
                             </li>
                         ))}
