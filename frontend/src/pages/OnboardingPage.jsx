@@ -79,6 +79,7 @@ export default function OnboardingPage() {
             if (updateError) throw updateError;
 
             // Success! Redirect to dashboard
+            // Success! Redirect to dashboard
             navigate('/dashboard');
 
         } catch (err) {

@@ -2,48 +2,47 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
-export function ProtectedRoute({ children }) {
+export function ProtectedRoute({ children, session }) {
     const [loading, setLoading] = useState(true);
-    const [session, setSession] = useState(null);
     const [profileComplete, setProfileComplete] = useState(false);
     const location = useLocation();
 
+    // Reset state when session changes
     useEffect(() => {
         let mounted = true;
 
-        async function checkAuth() {
+        async function checkProfile() {
             try {
-                const { data: { session: currentSession } } = await supabase.auth.getSession();
+                if (session?.user) {
+                    const { data: profile, error } = await supabase
+                        .from('profiles')
+                        .select('name, crp')
+                        .eq('id', session.user.id)
+                        .maybeSingle(); // Use maybeSingle to avoid 406 errors on 0 rows
 
-                if (mounted) {
-                    setSession(currentSession);
-
-                    if (currentSession) {
-                        // Check if profile is complete
-                        const { data: profile } = await supabase
-                            .from('profiles')
-                            .select('name, crp')
-                            .eq('id', currentSession.user.id)
-                            .single();
-
+                    if (mounted) {
                         if (profile && profile.name && profile.crp) {
                             setProfileComplete(true);
+                        } else {
+                            setProfileComplete(false);
                         }
                     }
                 }
             } catch (error) {
-                console.error("Auth check failed:", error);
+                console.error("Profile check failed:", error);
             } finally {
                 if (mounted) setLoading(false);
             }
         }
 
-        checkAuth();
+        if (session) {
+            checkProfile();
+        } else {
+            setLoading(false);
+        }
 
-        return () => {
-            mounted = false;
-        };
-    }, []);
+        return () => { mounted = false; };
+    }, [session]);
 
     if (loading) {
         return (

@@ -59,7 +59,7 @@ function App() {
         <Route
           path="/onboarding"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute session={session}>
               <OnboardingPage />
             </ProtectedRoute>
           }
@@ -69,7 +69,7 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute session={session}>
               <Layout>
                 <DashboardPage />
               </Layout>
@@ -81,7 +81,7 @@ function App() {
         <Route
           path="/patients"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute session={session}>
               <Layout>
                 <PatientsPage />
               </Layout>
@@ -92,7 +92,7 @@ function App() {
         <Route
           path="/sessions"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute session={session}>
               <Layout>
                 <SessionsPage />
               </Layout>
@@ -104,7 +104,7 @@ function App() {
         <Route
           path="/appointments"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute session={session}>
               <Layout>
                 <AppointmentsPage />
               </Layout>
@@ -114,7 +114,7 @@ function App() {
         <Route
           path="/settings"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute session={session}>
               <Layout>
                 <SettingsPage />
               </Layout>
@@ -125,7 +125,7 @@ function App() {
         <Route
           path="/patient/new"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute session={session}>
               <Layout>
                 <NewPatientPage />
               </Layout>
@@ -135,7 +135,7 @@ function App() {
         <Route
           path="/patient/:id/edit"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute session={session}>
               <Layout>
                 <EditPatientPage />
               </Layout>
@@ -145,7 +145,7 @@ function App() {
         <Route
           path="/patient/:id"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute session={session}>
               <Layout>
                 <PatientPage />
               </Layout>
@@ -155,7 +155,7 @@ function App() {
         <Route
           path="/session/:id"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute session={session}>
               <Layout>
                 <SessionPage />
               </Layout>
