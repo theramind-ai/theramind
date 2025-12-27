@@ -30,7 +30,7 @@ export default function OnboardingPage() {
                     .from('profiles')
                     .select('*')
                     .eq('id', user.id)
-                    .single();
+                    .maybeSingle();
 
                 if (profile?.name && profile?.crp) {
                     navigate('/dashboard');

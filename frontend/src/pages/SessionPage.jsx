@@ -38,14 +38,26 @@ export default function SessionPage() {
             });
 
             // response is already a Blob from api.get with responseType 'blob'
+            console.log("PDF Blob received:", response);
+
             const url = window.URL.createObjectURL(response);
+            console.log("Blob URL created:", url);
+
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `prontuario_sessao_${sessionId.slice(0, 8)}.pdf`);
+            const filename = `prontuario_sessao_${sessionId ? sessionId.slice(0, 8) : 'unknown'}.pdf`;
+            link.download = filename; // Use property instead of setAttribute
+
+            console.log("Triggering download with filename:", filename);
+
             document.body.appendChild(link);
             link.click();
             link.remove();
-            window.URL.revokeObjectURL(url);
+
+            // Add a small timeout before revoking to ensure download starts
+            setTimeout(() => {
+                window.URL.revokeObjectURL(url);
+            }, 100);
         } catch (err) {
             console.error('Erro ao gerar prontuário:', err);
             alert('Erro ao gerar prontuário. Tente novamente.');

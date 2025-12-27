@@ -16,9 +16,13 @@ export function ProtectedRoute({ children, session }) {
                 if (session?.user) {
                     const { data: profile, error } = await supabase
                         .from('profiles')
-                        .select('name, crp')
+                        .select('*')
                         .eq('id', session.user.id)
-                        .maybeSingle(); // Use maybeSingle to avoid 406 errors on 0 rows
+                        .maybeSingle();
+
+                    if (error) {
+                        console.error("Profile check error in ProtectedRoute:", error);
+                    }
 
                     if (mounted) {
                         if (profile && profile.name && profile.crp) {
