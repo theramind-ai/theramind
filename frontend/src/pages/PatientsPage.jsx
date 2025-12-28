@@ -48,12 +48,12 @@ export default function PatientsPage() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="flex justify-between items-center mb-8">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Meus Pacientes</h1>
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Meus Pacientes</h1>
                 <button
                     onClick={handleAddPatient}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    className="inline-flex items-center justify-center px-4 py-3 sm:py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                 >
                     Adicionar Paciente
                 </button>
@@ -114,12 +114,12 @@ export default function PatientsPage() {
                 <div className="bg-white dark:bg-slate-800 shadow overflow-hidden sm:rounded-md transition-colors">
                     <ul className="divide-y divide-gray-200 dark:divide-slate-700">
                         {patients.map((patient) => (
-                            <li key={patient.id} onClick={() => handlePatientClick(patient.id)} className="hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
-                                <div className="px-4 py-4 sm:px-6">
+                            <li key={patient.id} onClick={() => handlePatientClick(patient.id)} className="hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer transition-colors active:bg-gray-100 dark:active:bg-slate-600">
+                                <div className="px-3 py-4 sm:px-4 sm:py-4 md:px-6">
                                     <div className="flex items-center justify-between">
-                                        <p className="text-sm font-medium text-blue-600 dark:text-blue-400 truncate">{patient.name}</p>
+                                        <p className="text-sm sm:text-base font-medium text-blue-600 dark:text-blue-400 truncate">{patient.name}</p>
                                         <div className="ml-2 flex-shrink-0 flex">
-                                            <p className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                                            <p className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
                                                 Visualizar
                                             </p>
                                         </div>

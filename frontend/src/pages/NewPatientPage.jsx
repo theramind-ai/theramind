@@ -57,10 +57,10 @@ export default function NewPatientPage() {
     }
 
     return (
-        <div className="max-w-3xl mx-auto py-8 px-4">
-            <div className="mb-8">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Novo Paciente</h1>
-                <p className="text-gray-600 dark:text-gray-300">Cadastre um novo paciente para iniciar o acompanhamento.</p>
+        <div className="max-w-3xl mx-auto py-4 sm:py-8 px-3 sm:px-4">
+            <div className="mb-6 sm:mb-8">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Novo Paciente</h1>
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">Cadastre um novo paciente para iniciar o acompanhamento.</p>
             </div>
 
             <div className="bg-white dark:bg-slate-800 shadow rounded-lg p-6 transition-colors">
@@ -139,18 +139,18 @@ export default function NewPatientPage() {
                         </div>
                     )}
 
-                    <div className="flex justify-end space-x-3">
+                    <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
                         <button
                             type="button"
                             onClick={() => navigate('/dashboard')}
-                            className="rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 py-2 px-4 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                            className="rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 py-3 sm:py-2 px-4 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
                         >
                             Cancelar
                         </button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                            className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 py-3 sm:py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition-colors"
                         >
                             {loading ? 'Salvando...' : 'Cadastrar Paciente'}
                         </button>

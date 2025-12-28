@@ -95,25 +95,25 @@ export default function SessionPage() {
     if (!session) return <div className="p-4">Sessão não encontrada</div>;
 
     return (
-        <div className="container mx-auto p-4 max-w-4xl">
+        <div className="container mx-auto p-3 sm:p-4 max-w-4xl">
             {/* Cabeçalho */}
-            <div className="mb-6">
+            <div className="mb-4 sm:mb-6">
                 <button
                     onClick={() => navigate(-1)}
-                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mb-4 flex items-center transition-colors"
+                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mb-3 sm:mb-4 flex items-center transition-colors min-h-[44px]"
                 >
                     ← Voltar
                 </button>
-                <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">
                     Sessão de {formatDate(session.created_at)}
                 </h1>
             </div>
 
-            <div className="flex justify-end mb-6">
+            <div className="flex flex-col sm:flex-row sm:justify-end gap-3 sm:gap-4 mb-4 sm:mb-6">
                 <button
                     onClick={handleViewRecord}
                     disabled={generatingRecord}
-                    className="flex items-center px-4 py-2 bg-white text-indigo-600 border border-indigo-600 rounded-md hover:bg-indigo-50 mr-4 disabled:opacity-50"
+                    className="flex items-center justify-center px-4 py-3 sm:py-2 bg-white text-indigo-600 border border-indigo-600 rounded-md hover:bg-indigo-50 disabled:opacity-50 transition-colors"
                 >
                     <Eye className="mr-2" size={18} />
                     Ver Prontuário
@@ -121,7 +121,7 @@ export default function SessionPage() {
                 <button
                     onClick={handleDownloadRecord}
                     disabled={generatingRecord}
-                    className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                    className="flex items-center justify-center px-4 py-3 sm:py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 transition-colors"
                 >
                     {generatingRecord ? 'Gerando...' : (
                         <>
@@ -135,11 +135,11 @@ export default function SessionPage() {
             {/* Conteúdo da Sessão */}
             <div className="space-y-6">
                 {/* Texto Original / Transcrição */}
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm transition-colors">
-                    <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">
+                <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-sm transition-colors">
+                    <h2 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-3">
                         {session.audio_url ? 'Transcrição' : 'Texto Original'}
                     </h2>
-                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                    <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                         {session.transcription || 'Sem transcrição disponível'}
                     </p>
                 </div>
@@ -203,12 +203,12 @@ export default function SessionPage() {
 
             {/* Modal Prontuário */}
             {viewingRecord && recordData && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-                    <div className="bg-white dark:bg-slate-800 rounded-lg max-w-3xl w-full my-8 flex flex-col max-h-[90vh]">
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
+                    <div className="bg-white dark:bg-slate-800 rounded-lg max-w-3xl w-full my-4 sm:my-8 flex flex-col max-h-[90vh]">
                         {/* Header Modal */}
-                        <div className="p-6 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center sticky top-0 bg-white dark:bg-slate-800 rounded-t-lg z-10">
-                            <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center">
-                                <FileText className="mr-2" size={24} />
+                        <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center sticky top-0 bg-white dark:bg-slate-800 rounded-t-lg z-10">
+                            <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white flex items-center">
+                                <FileText className="mr-2" size={20} />
                                 Prontuário Clínico
                             </h2>
                             <button
@@ -220,7 +220,7 @@ export default function SessionPage() {
                         </div>
 
                         {/* Conteúdo Modal */}
-                        <div className="p-8 overflow-y-auto">
+                        <div className="p-4 sm:p-6 md:p-8 overflow-y-auto">
                             <div className="mb-6">
                                 <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">1. Queixa Principal</h3>
                                 <p className="text-gray-800 dark:text-gray-200 leading-relaxed bg-gray-50 dark:bg-slate-700/50 p-4 rounded-md">
@@ -242,7 +242,7 @@ export default function SessionPage() {
                                 </p>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                                 <div className="mb-6">
                                     <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">4. Intervenções</h3>
                                     <p className="text-gray-800 dark:text-gray-200 leading-relaxed bg-gray-50 dark:bg-slate-700/50 p-4 rounded-md">

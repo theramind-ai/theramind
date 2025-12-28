@@ -66,8 +66,8 @@ export default function SessionsPage() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">Últimas Sessões</h1>
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-6 sm:mb-8">Últimas Sessões</h1>
 
             {loading ? (
                 <div className="flex items-center justify-center h-64">
@@ -84,13 +84,13 @@ export default function SessionsPage() {
                 <div className="bg-white dark:bg-slate-800 shadow overflow-hidden sm:rounded-md transition-colors">
                     <ul className="divide-y divide-gray-200 dark:divide-slate-700">
                         {sessions.map((session) => (
-                            <li key={session.id} className="px-4 py-4 sm:px-6 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer transition-colors" onClick={() => navigate(`/patient/${session.patient_id}`)}>
+                            <li key={session.id} className="px-3 py-4 sm:px-4 sm:py-4 md:px-6 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer transition-colors active:bg-gray-100 dark:active:bg-slate-600" onClick={() => navigate(`/patient/${session.patient_id}`)}>
                                 <div className="flex items-center justify-between">
-                                    <div className="text-sm font-medium text-blue-600 dark:text-blue-400 truncate">
+                                    <div className="text-sm sm:text-base font-medium text-blue-600 dark:text-blue-400 truncate">
                                         {session.patient_name}
                                     </div>
                                     <div className="ml-2 flex-shrink-0 flex">
-                                        <p className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
+                                        <p className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
                                             {new Date(session.created_at).toLocaleDateString()}
                                         </p>
                                     </div>

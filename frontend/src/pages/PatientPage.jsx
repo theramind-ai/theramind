@@ -66,15 +66,15 @@ export default function PatientPage() {
   if (error) return <div className="p-4 text-red-500">{error}</div>;
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
+    <div className="container mx-auto p-3 sm:p-4 max-w-4xl">
       {/* Cabeçalho do Paciente */}
-      <div className="mb-8 bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm transition-colors">
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
+      <div className="mb-6 sm:mb-8 bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-lg shadow-sm transition-colors">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+          <div className="flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">
               {patient?.name || 'Paciente'}
             </h1>
-            <p className="text-gray-600 dark:text-gray-300 mt-1">
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-1">
               {patient?.email || 'Sem informações de contato'}
             </p>
             {patient?.phone && (
@@ -85,7 +85,7 @@ export default function PatientPage() {
           </div>
           <button
             onClick={() => navigate(`/patient/${patientId}/edit`)}
-            className="px-4 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-200 dark:hover:bg-slate-600 text-sm transition-colors"
+            className="px-4 py-3 sm:py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-200 dark:hover:bg-slate-600 text-sm transition-colors w-full sm:w-auto"
           >
             Editar Paciente
           </button>
@@ -93,11 +93,11 @@ export default function PatientPage() {
       </div>
 
       {/* Abas */}
-      <div className="mb-6 border-b border-gray-200 dark:border-slate-700">
-        <nav className="-mb-px flex space-x-8">
+      <div className="mb-4 sm:mb-6 border-b border-gray-200 dark:border-slate-700 overflow-x-auto">
+        <nav className="-mb-px flex space-x-4 sm:space-x-8 min-w-max">
           <button
             onClick={() => setActiveTab('sessions')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'sessions'
+            className={`py-3 sm:py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'sessions'
               ? 'border-blue-500 text-blue-600 dark:text-blue-400'
               : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-slate-600'
               }`}
@@ -106,7 +106,7 @@ export default function PatientPage() {
           </button>
           <button
             onClick={() => setActiveTab('new')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'new'
+            className={`py-3 sm:py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'new'
               ? 'border-blue-500 text-blue-600 dark:text-blue-400'
               : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-slate-600'
               }`}
@@ -115,7 +115,7 @@ export default function PatientPage() {
           </button>
           <button
             onClick={() => setActiveTab('reports')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'reports'
+            className={`py-3 sm:py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'reports'
               ? 'border-blue-500 text-blue-600 dark:text-blue-400'
               : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-slate-600'
               }`}
@@ -126,10 +126,10 @@ export default function PatientPage() {
       </div>
 
       {/* Conteúdo das Abas */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 transition-colors">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 sm:p-6 transition-colors">
         {activeTab === 'new' ? (
           <div>
-            <h2 className="text-xl font-semibold mb-6 dark:text-white">Nova Análise</h2>
+            <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 dark:text-white">Nova Análise</h2>
             <TextAnalysisInput
               patientId={patientId}
               onAnalysisComplete={handleAnalysisComplete}
@@ -137,16 +137,16 @@ export default function PatientPage() {
           </div>
         ) : activeTab === 'reports' ? (
           <div>
-            <h2 className="text-xl font-semibold mb-6 dark:text-white">Relatórios</h2>
+            <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 dark:text-white">Relatórios</h2>
             <ReportGenerator patientId={patientId} />
           </div>
         ) : (
           <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold dark:text-white">Sessões Anteriores</h2>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0 mb-4 sm:mb-6">
+              <h2 className="text-lg sm:text-xl font-semibold dark:text-white">Sessões Anteriores</h2>
               <button
                 onClick={() => setActiveTab('new')}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                className="px-4 py-3 sm:py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm transition-colors w-full sm:w-auto"
               >
                 + Nova Análise
               </button>
