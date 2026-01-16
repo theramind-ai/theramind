@@ -15,6 +15,8 @@ export default function OnboardingPage() {
     const [name, setName] = useState('');
     const [crp, setCrp] = useState('');
     const [recoveryEmail, setRecoveryEmail] = useState('');
+    const [theoreticalApproach, setTheoreticalApproach] = useState('Integrativa');
+    const [termsAccepted, setTermsAccepted] = useState(false);
 
     useEffect(() => {
         // Double check if profile exists or is already complete to avoid stuck users
@@ -64,11 +66,28 @@ export default function OnboardingPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error('Usuário não autenticado');
 
+            // --- NOVO: Verificação de CRP Duplicado ---
+            const { data: existingProfile, error: searchError } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('crp', crp.trim())
+                .maybeSingle();
+
+            if (existingProfile && existingProfile.id !== user.id) {
+                setError('Este CRP já está vinculado a outro profissional cadastrado no sistema.');
+                setLoading(false);
+                return;
+            }
+            // ------------------------------------------
+
             const updates = {
                 id: user.id,
                 name: name.trim(),
                 crp: crp.trim(),
                 recovery_email: recoveryEmail.trim(),
+                theoretical_approach: theoreticalApproach,
+                terms_accepted: true,
+                terms_accepted_at: new Date(),
                 updated_at: new Date()
             };
 
@@ -159,21 +178,74 @@ export default function OnboardingPage() {
                                 placeholder="seu.email.secundario@exemplo.com"
                                 className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
+                        </div>
+
+                        {/* Abordagem Teórica */}
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2 flex items-center">
+                                <Save size={16} className="mr-2" /> Abordagem Teórica Principal
+                            </label>
+                            <select
+                                value={theoreticalApproach}
+                                onChange={(e) => setTheoreticalApproach(e.target.value)}
+                                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="Integrativa">Integrativa / Multimodal</option>
+                                <option value="TCC">TCC (Terapia Cognitivo-Comportamental)</option>
+                                <option value="Psicanálise">Psicanálise</option>
+                                <option value="Humanismo">Humanismo / Fenomenologia</option>
+                                <option value="Analítica">Psicologia Analítica (Junguiana)</option>
+                                <option value="Sistêmica">Terapia Sistêmica</option>
+                            </select>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                Útil caso você perca acesso ao seu e-mail principal.
+                                Isso ajudará a IA a personalizar as análises de acordo com sua linha de trabalho.
                             </p>
                         </div>
 
+                        {/* Termos de Uso */}
+                        <div className="space-y-4 pt-2">
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
+                                Termos de Uso e Responsabilidade Ética
+                            </label>
+                            <div className="h-40 overflow-y-auto p-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-400 leading-relaxed scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600">
+                                <p className="font-bold mb-2 uppercase text-slate-800 dark:text-slate-200">TERMOS DE USO E RESPONSABILIDADE ÉTICA (THERAMIND)</p>
+                                <p className="mb-2">Ao utilizar a plataforma TheraMind, você, profissional de psicologia devidamente registrado(a) no Conselho Regional de Psicologia (CRP), declara estar ciente e concordar com os seguintes termos:</p>
+                                <ul className="list-disc pl-4 space-y-2">
+                                    <li><strong>1. Responsabilidade Clínica Única:</strong> O TheraMind é uma ferramenta de apoio e suporte ao raciocínio clínico. Toda e qualquer decisão diagnóstica, técnica ou intervenção é de responsabilidade exclusiva do profissional psicólogo(a) titular do caso.</li>
+                                    <li><strong>2. Conformidade com o CFP:</strong> O uso desta ferramenta não isenta o profissional do cumprimento integral das Resoluções CFP nº 01/2009 (Registro Documental) e nº 06/2019 (Elaboração de Documentos). O psicólogo deve revisar e validar todo conteúdo gerado pela IA antes de sua oficialização.</li>
+                                    <li><strong>3. Sigilo Profissional e LGPD:</strong> O profissional compromete-se a resguardar o sigilo das informações de seus pacientes, em conformidade com o Código de Ética Profissional e a Lei Geral de Proteção de Dados (LGPD).</li>
+                                    <li><strong>4. Natureza da IA:</strong> Você reconhece que as sugestões da IA são baseadas em modelos probabilísticos e podem conter imprecisões, devendo ser sempre submetidas ao crivo técnico do profissional.</li>
+                                    <li><strong>5. Guarda de Documentos:</strong> A responsabilidade pela guarda dos prontuários pelo prazo mínimo de 5 anos permanece sendo do profissional, conforme exigido pelo CFP.</li>
+                                </ul>
+                            </div>
+                            <label className="flex items-start cursor-pointer group">
+                                <div className="flex items-center h-5">
+                                    <input
+                                        type="checkbox"
+                                        checked={termsAccepted}
+                                        onChange={(e) => setTermsAccepted(e.target.checked)}
+                                        className="h-4 w-4 text-blue-600 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500 cursor-pointer"
+                                        required
+                                    />
+                                </div>
+                                <div className="ml-3 text-sm">
+                                    <span className="text-slate-700 dark:text-slate-200 group-hover:text-blue-600 transition-colors">
+                                        Li e concordo com os Termos de Uso e me comprometo a seguir as normas éticas do CFP. *
+                                    </span>
+                                </div>
+                            </label>
+                        </div>
+
                         {error && (
-                            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                                <p className="text-sm text-red-600">{error}</p>
+                            <div className="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
+                                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
                             </div>
                         )}
 
                         <button
                             type="submit"
-                            disabled={loading}
-                            className="w-full flex items-center justify-center bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+                            disabled={loading || !termsAccepted}
+                            className="w-full flex items-center justify-center bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white font-medium py-3 px-4 rounded-lg transition-colors shadow-lg shadow-blue-500/20"
                         >
                             <Save className="mr-2" size={18} />
                             {loading ? 'Salvando...' : 'Concluir Cadastro'}

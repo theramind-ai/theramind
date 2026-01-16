@@ -70,7 +70,7 @@ export function Header() {
               <button
                 onClick={() => setIsChatOpen(!isChatOpen)}
                 className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-slate-700 transition-colors"
-                title="Copiloto Psicanalista"
+                title="Copiloto Clínico"
               >
                 <MessageSquare className="h-5 w-5" />
               </button>
@@ -94,7 +94,7 @@ export function Header() {
               <button
                 onClick={() => setIsChatOpen(!isChatOpen)}
                 className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-slate-700 transition-colors"
-                title="Copiloto Psicanalista"
+                title="Copiloto Clínico"
               >
                 <MessageSquare className="h-5 w-5" />
               </button>

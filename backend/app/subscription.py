@@ -1,0 +1,101 @@
+from datetime import date
+from fastapi import HTTPException, status
+from .db import get_supabase_client
+from loguru import logger
+
+# --- CONFIGURAÇÃO DOS PLANOS ---
+PLAN_CONFIG = {
+    "free": {
+        "daily_charts_limit": 3,
+        "features": [] # No advanced features
+    },
+    "plus": {
+        "daily_charts_limit": 10,
+        "features": ["ai_analysis", "scheduling"]
+    },
+    "premium": {
+        "daily_charts_limit": 999999, # Unlimited
+        "features": ["ai_analysis", "scheduling", "copilot"]
+    }
+}
+
+async def get_user_subscription(user_id: str):
+    """Busca o plano e uso atual do usuário."""
+    supabase = get_supabase_client()
+    try:
+        # Busca profile
+        resp = supabase.table("profiles").select("*").eq("id", user_id).single().execute()
+        profile = resp.data
+        if not profile:
+            # Se não existir profile, cria um default 'free' (fallback)
+            # Mas o trigger deveria ter criado.
+            return {
+                "plan": "free",
+                "daily_count": 0,
+                "last_date": date.today().isoformat()
+            }
+        
+        return {
+            "plan": profile.get("subscription_plan", "free"),
+            "daily_count": profile.get("daily_requests_count", 0),
+            "last_date": profile.get("last_request_date", date.today().isoformat())
+        }
+    except Exception as e:
+        logger.error(f"Erro ao buscar subscrição: {e}")
+        # Fail safe -> Free tier
+        return {"plan": "free", "daily_count": 0, "last_date": date.today().isoformat()}
+
+async def check_subscription_feature(user_id: str, feature_name: str):
+    """Verifica se o usuário tem acesso a uma feature específica."""
+    sub_data = await get_user_subscription(user_id)
+    plan = sub_data["plan"]
+    
+    # Se o plano não for conhecido, assume free
+    config = PLAN_CONFIG.get(plan, PLAN_CONFIG["free"])
+    
+    if feature_name not in config["features"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Seu plano atual ({plan.capitalize()}) não permite acesso a: {feature_name}. Atualize para Plus ou Premium."
+        )
+    return True
+
+async def check_and_increment_charts_usage(user_id: str):
+    """Verifica limite diário de prontuários e incrementa se permitido."""
+    supabase = get_supabase_client()
+    
+    # 1. Busca dados atuais
+    resp = supabase.table("profiles").select("subscription_plan, daily_requests_count, last_request_date").eq("id", user_id).single().execute()
+    if not resp.data:
+         raise HTTPException(status_code=500, detail="Perfil de usuário não encontrado.")
+    
+    profile = resp.data
+    plan = profile.get("subscription_plan", "free")
+    current_count = profile.get("daily_requests_count", 0)
+    last_date_str = profile.get("last_request_date")
+    
+    today_str = date.today().isoformat()
+    
+    # 2. Reseta contador se mudou o dia
+    if last_date_str != today_str:
+        current_count = 0
+    
+    # 3. Verifica limite
+    config = PLAN_CONFIG.get(plan, PLAN_CONFIG["free"])
+    limit = config["daily_charts_limit"]
+    
+    if current_count >= limit:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Limite diário de prontuários atingido ({limit}). Atualize seu plano para continuar."
+        )
+    
+    # 4. Incrementa e Salva
+    new_count = current_count + 1
+    update_data = {
+        "daily_requests_count": new_count,
+        "last_request_date": today_str
+    }
+    
+    supabase.table("profiles").update(update_data).eq("id", user_id).execute()
+    return True

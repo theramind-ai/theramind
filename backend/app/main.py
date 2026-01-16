@@ -1,20 +1,21 @@
 import os
-import tempfile
 from typing import List, Optional
 from datetime import datetime
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, status, Response
+from fastapi import FastAPI, HTTPException, Depends, status, Response, Request
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
-import httpx
 from openai import OpenAI
 import json
 
 from .db import get_supabase_client
 from .deps import get_current_user, AuthUser
 from . import schemas
+from . import schemas
 from . import tools
+from . import subscription
+from . import payment
 
 from .report_generator import (
     calculate_sentiment_trends,
@@ -123,110 +124,76 @@ TOOLS_SCHEMA = [
     }
 ]
 
-# ... (Existing audio/transcribe/analyze endpoints remain unchanged) ...
-@app.post("/upload-audio", response_model=schemas.UploadAudioResponse)
-async def upload_audio(
-    file: UploadFile = File(..., description=".mp3 da sessão"),
-    patient_id: str = Form(...),
-    user: AuthUser = Depends(get_current_user),
-):
-    if file.content_type not in ("audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav"):
-        raise HTTPException(status_code=400, detail="Tipo de arquivo inválido")
-
-    supabase = get_supabase_client()
-
-    # Checa se paciente pertence ao usuário
-    patient = (
-        supabase.table("patients")
-        .select("id, user_id")
-        .eq("id", patient_id)
-        .single()
-        .execute()
-    )
-    if not patient.data or patient.data["user_id"] != user.user_id:
-        raise HTTPException(status_code=403, detail="Acesso negado ao paciente")
-
-    path = f"{user.user_id}/{patient_id}/{file.filename}"
-
-    try:
-        content = await file.read()
-        res = supabase.storage.from_(BUCKET).upload(
-            path,
-            content,
-            {"content-type": file.content_type},
-        )
-
-        public_url = supabase.storage.from_(BUCKET).get_public_url(path)
-        return schemas.UploadAudioResponse(audio_url=public_url)
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Falha upload áudio: {e}")
-        raise HTTPException(status_code=500, detail="Erro interno")
-
-
-@app.post("/transcribe", response_model=schemas.TranscribeResponse)
-async def transcribe_audio(
-    body: schemas.TranscribeRequest,
-    user: AuthUser = Depends(get_current_user),
-):
-    audio_url = str(body.audio_url)
-
-    try:
-        async with httpx.AsyncClient(timeout=120) as http_client:
-            resp = await http_client.get(audio_url)
-            resp.raise_for_status()
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
-                tmp.write(resp.content)
-                tmp_path = tmp.name
-
-        with open(tmp_path, "rb") as f:
-            transcription = client.audio.transcriptions.create(
-                model="whisper-1",
-                file=f,
-                response_format="text",
-            )
-
-        return schemas.TranscribeResponse(transcription=str(transcription))
-    except httpx.HTTPError as e:
-        logger.error(f"Erro download áudio: {e}")
-        raise HTTPException(status_code=400, detail="Não foi possível baixar o áudio")
-    except Exception as e:
-        logger.error(f"Erro transcrição: {e}")
-        raise HTTPException(status_code=500, detail="Erro ao transcrever áudio")
-
-
 @app.post("/analyze", response_model=schemas.AnalyzeResponse)
 async def analyze_transcription(
     body: schemas.AnalyzeRequest,
     user: AuthUser = Depends(get_current_user),
 ):
+    # Enforce AI Analysis permission
+    await subscription.check_subscription_feature(user.user_id, "ai_analysis")
+    
     transcription = body.transcription
+
+    # Fetch Therapist theoretical approach
+    supabase = get_supabase_client()
+    therapist = (
+        supabase.table("profiles")
+        .select("theoretical_approach")
+        .eq("id", user.user_id)
+        .single()
+        .execute()
+    )
+    approach = therapist.data.get("theoretical_approach", "Integrativa") if therapist.data else "Integrativa"
 
     try:
         system_prompt = (
-            "Você é um assistente clínico sênior com vasta experiência em Psicologia Profunda (Psicanálise Freudiana e Lacaniana, Psicologia Analítica Junguiana e Logoterapia). "
-            "Sua análise deve ser integrativa, fluida e sofisticada, evitando estruturas rígidas ou repetitivas. "
-            "Ao invés de listar o que cada autor diria, entrelace os conceitos teóricos diretamente na interpretação do caso. "
-            "Identifique a queixa principal e os detalhes da sessão para selecionar dinamicamente a lente teórica mais adequada "
-            "(ex: questões de sentido/vazio -> Frankl; simbologia/inconsciente coletivo -> Jung; desejos/pulsões -> Freud/Lacan). "
-            "Sua escrita deve soar como a de um supervisor clínico experiente discutindo o caso."
-            "Responda SEMPRE em JSON com as chaves: summary, insights, themes (lista de strings)."
+            "Você é um assistente de apoio ao raciocínio clínico e à elaboração de prontuários e documentos psicológicos, "
+            f"especialista na abordagem {approach}, com base nas normas éticas e técnicas do Conselho Federal de Psicologia (CFP), especialmente:\n\n"
+            "• Resolução CFP nº 01/2009 (registro documental obrigatório)\n"
+            "• Resolução CFP nº 06/2019 (elaboração de documentos psicológicos)\n"
+            "• Manual Orientativo de Registro e Elaboração de Documentos Psicológicos publicado pelo CFP.\n\n"
+            "Sua função é auxiliar o psicólogo(a) a organizar, qualificar e formular textos de prontuário, relatórios e "
+            f"documentos psicológicos de acordo com os relatos do profissional no prontuário e na abordagem {approach}, "
+            "dando oportunidade para o profissional editar. Você sugere possibilidades diagnósticas e sugere intervenções "
+            f"de acordo com a abordagem {approach}.\n\n"
+            "LINGUAGEM ÉTICA E TÉCNICA OBRIGATÓRIA:\n"
+            "Sempre use expressões condicionais e não conclusivas, como:\n"
+            "'observa-se', 'levanta-se hipótese', 'pode indicar', 'sugere possibilidade'.\n"
+            "Nunca use linguagem determinista, diagnóstica ou prescritiva.\n\n"
+            "Responda SEMPRE em JSON com as chaves:\n"
+            "- registro_descritivo (descrição factual dos eventos, verbatim importantes, afetos e comportamentos observados)\n"
+            f"- hipoteses_clinicas (formulação aberta e condicional, conectada com a abordagem {approach}, sugerindo possibilidades diagnósticas)\n"
+            f"- direcoes_intervencao (sugestões hipotéticas compatíveis com a abordagem {approach}, indicando possíveis intervenções)\n"
+            "- temas_relevantes (lista de strings com temas identificados)"
         )
 
-        summary_prompt = (
-            "Resuma a sessão em um parágrafo coeso (5 a 10 linhas), capturando a essência do discurso e os afetos predominantes."
+        registro_prompt = (
+            "Elabore um registro descritivo da sessão (5 a 10 linhas), documentando de forma factual e objetiva:\n"
+            "- Os eventos relatados pelo paciente\n"
+            "- Verbalizações importantes (verbatim quando relevante)\n"
+            "- Afetos predominantes observados\n"
+            "- Comportamentos não-verbais significativos\n"
+            "Use linguagem técnica e factual, sem interpretações nesta seção."
         )
 
-        insights_prompt = (
-            "Gere uma análise clínica profunda e narrativa (NÃO use listas ou tópicos):\n"
+        hipoteses_prompt = (
+            "Formule hipóteses clínicas de forma narrativa e condicional (NÃO use listas ou tópicos):\n"
             "1. Integre organicamente os conceitos teóricos mais pertinentes ao conteúdo trazido.\n"
-            "2. Se houver crise de identidade ou vazio existencial, traga a perspectiva da Logoterapia (sentido, responsabilidade).\n"
-            "3. Se houver material onírico ou simbólico rico, utilize a Psicologia Analítica (arquétipos, sombras).\n"
-            "4. Para conflitos pulsionais, dinâmicas de desejo ou mecanismos de defesa, ancore-se na Psicanálise (Freud/Lacan).\n"
-            "5. Evite frases clichês como 'Freud diria que...'. Prefira construções como 'Sob a ótica do inconsciente...', 'Nota-se uma dinâmica...', 'O discurso aponta para...' \n"
-            "6. O objetivo é fornecer 'insights' que ajudem o terapeuta a compreender as camadas subjacentes do caso.\n\n"
+            "2. Sugira possibilidades diagnósticas usando linguagem condicional ('pode indicar', 'sugere', 'observa-se padrão compatível com').\n"
+            "3. Se houver crise de identidade ou vazio existencial, considere perspectivas existenciais (sentido, responsabilidade).\n"
+            "4. Se houver material onírico ou simbólico rico, considere aspectos arquetípicos e simbólicos.\n"
+            "5. Para conflitos relacionais, dinâmicas de desejo ou mecanismos de defesa, considere perspectivas psicodinâmicas.\n"
+            "6. Evite frases clichês. Prefira construções como 'Observa-se...', 'Levanta-se a hipótese de...', 'O discurso sugere...'.\n"
             "Escreva um texto fluido, elegante e clinicamente preciso."
+        )
+
+        intervencoes_prompt = (
+            "Sugira direções de intervenção de forma hipotética e condicional:\n"
+            "1. Apresente possibilidades de intervenção compatíveis com as hipóteses levantadas.\n"
+            "2. Use linguagem sugestiva: 'Pode-se considerar', 'Sugere-se explorar', 'Seria pertinente investigar'.\n"
+            "3. Indique técnicas ou abordagens que possam ser úteis, sem prescrever.\n"
+            "4. Mantenha o tom de sugestão, deixando a decisão final ao psicólogo responsável.\n"
+            "Escreva de forma narrativa e profissional."
         )
 
         messages = [
@@ -234,11 +201,11 @@ async def analyze_transcription(
             {
                 "role": "user",
                 "content": (
-                    f"{summary_prompt}\n\n{insights_prompt}\n\n"
+                    f"{registro_prompt}\n\n{hipoteses_prompt}\n\n{intervencoes_prompt}\n\n"
                     "Transcrição completa da sessão (NÃO logar este conteúdo em lugar nenhum):\n"
                     f"{transcription}\n\n"
                     "Responda apenas em JSON válido, por exemplo:\n"
-                    '{ "summary": "...", "insights": "...", "themes": ["tema1", "tema2"] }'
+                    '{ "registro_descritivo": "...", "hipoteses_clinicas": "...", "direcoes_intervencao": "...", "temas_relevantes": ["tema1", "tema2"] }'
                 ),
             },
         ]
@@ -252,21 +219,24 @@ async def analyze_transcription(
         content = completion.choices[0].message.content or "{}"
         data = json.loads(content)
 
-        summary = data.get("summary", "")
-        insights = data.get("insights", "")
-        themes = data.get("themes", []) or []
+        registro_descritivo = data.get("registro_descritivo", "")
+        hipoteses_clinicas = data.get("hipoteses_clinicas", "")
+        direcoes_intervencao = data.get("direcoes_intervencao", "")
+        temas_relevantes = data.get("temas_relevantes", []) or []
 
-        if not isinstance(themes, list):
-            themes = [str(themes)]
+        if not isinstance(temas_relevantes, list):
+            temas_relevantes = [str(temas_relevantes)]
 
         return schemas.AnalyzeResponse(
-            summary=summary,
-            insights=insights,
-            themes=[str(t) for t in themes],
+            registro_descritivo=registro_descritivo,
+            hipoteses_clinicas=hipoteses_clinicas,
+            direcoes_intervencao=direcoes_intervencao,
+            temas_relevantes=[str(t) for t in temas_relevantes],
         )
     except Exception as e:
         logger.error(f"Erro análise GPT: {e}")
         raise HTTPException(status_code=500, detail="Erro ao analisar sessão")
+
 
 
 @app.post("/analyze-text", response_model=schemas.AnalyzeResponse)
@@ -274,32 +244,71 @@ async def analyze_text(
     body: schemas.AnalyzeTextRequest,
     user: AuthUser = Depends(get_current_user),
 ):
+    # Enforce AI Analysis permission
+    await subscription.check_subscription_feature(user.user_id, "ai_analysis")
+
     text = body.text
+
+    # Fetch Therapist theoretical approach
+    supabase = get_supabase_client()
+    therapist = (
+        supabase.table("profiles")
+        .select("theoretical_approach")
+        .eq("id", user.user_id)
+        .single()
+        .execute()
+    )
+    approach = therapist.data.get("theoretical_approach", "Integrativa") if therapist.data else "Integrativa"
 
     try:
         system_prompt = (
-            "Você é um assistente clínico sênior com vasta experiência em Psicologia Profunda (Psicanálise Freudiana e Lacaniana, Psicologia Analítica Junguiana e Logoterapia). "
-            "Sua análise deve ser integrativa, fluida e sofisticada, evitando estruturas rígidas ou repetitivas. "
-            "Ao invés de listar o que cada autor diria, entrelace os conceitos teóricos diretamente na interpretação do caso. "
-            "Identifique a queixa principal e os detalhes da sessão para selecionar dinamicamente a lente teórica mais adequada "
-            "(ex: questões de sentido/vazio -> Frankl; simbologia/inconsciente coletivo -> Jung; desejos/pulsões -> Freud/Lacan). "
-            "Sua escrita deve soar como a de um supervisor clínico experiente discutindo o caso."
-            "Responda SEMPRE em JSON com as chaves: summary, insights, themes (lista de strings)."
+            "Você é um assistente de apoio ao raciocínio clínico e à elaboração de prontuários e documentos psicológicos, "
+            f"especialista na abordagem {approach}, com base nas normas éticas e técnicas do Conselho Federal de Psicologia (CFP), especialmente:\n\n"
+            "• Resolução CFP nº 01/2009 (registro documental obrigatório)\n"
+            "• Resolução CFP nº 06/2019 (elaboração de documentos psicológicos)\n"
+            "• Manual Orientativo de Registro e Elaboração de Documentos Psicológicos publicado pelo CFP.\n\n"
+            "Sua função é auxiliar o psicólogo(a) a organizar, qualificar e formular textos de prontuário, relatórios e "
+            f"documentos psicológicos de acordo com os relatos do profissional no prontuário e na abordagem {approach}, "
+            "dando oportunidade para o profissional editar. Você sugere possibilidades diagnósticas e sugere intervenções "
+            f"de acordo com a abordagem {approach}.\n\n"
+            "LINGUAGEM ÉTICA E TÉCNICA OBRIGATÓRIA:\n"
+            "Sempre use expressões condicionais e não conclusivas, como:\n"
+            "'observa-se', 'levanta-se hipótese', 'pode indicar', 'sugere possibilidade'.\n"
+            "Nunca use linguagem determinista, diagnóstica ou prescritiva.\n\n"
+            "Responda SEMPRE em JSON com as chaves:\n"
+            "- registro_descritivo (descrição factual dos eventos, verbatim importantes, afetos e comportamentos observados)\n"
+            f"- hipoteses_clinicas (formulação aberta e condicional, conectada com a abordagem {approach}, sugerindo possibilidades diagnósticas)\n"
+            f"- direcoes_intervencao (sugestões hipotéticas compatíveis com a abordagem {approach}, indicando possíveis intervenções)\n"
+            "- temas_relevantes (lista de strings com temas identificados)"
         )
 
-        summary_prompt = (
-            "Resuma a sessão em um parágrafo coeso (5 a 10 linhas), capturando a essência do discurso e os afetos predominantes."
+        registro_prompt = (
+            "Elabore um registro descritivo da sessão (5 a 10 linhas), documentando de forma factual e objetiva:\n"
+            "- Os eventos relatados pelo paciente\n"
+            "- Verbalizações importantes (verbatim quando relevante)\n"
+            "- Afetos predominantes observados\n"
+            "- Comportamentos não-verbais significativos\n"
+            "Use linguagem técnica e factual, sem interpretações nesta seção."
         )
 
-        insights_prompt = (
-            "Gere uma análise clínica profunda e narrativa (NÃO use listas ou tópicos):\n"
+        hipoteses_prompt = (
+            "Formule hipóteses clínicas de forma narrativa e condicional (NÃO use listas ou tópicos):\n"
             "1. Integre organicamente os conceitos teóricos mais pertinentes ao conteúdo trazido.\n"
-            "2. Se houver crise de identidade ou vazio existencial, traga a perspectiva da Logoterapia (sentido, responsabilidade).\n"
-            "3. Se houver material onírico ou simbólico rico, utilize a Psicologia Analítica (arquétipos, sombras).\n"
-            "4. Para conflitos pulsionais, dinâmicas de desejo ou mecanismos de defesa, ancore-se na Psicanálise (Freud/Lacan).\n"
-            "5. Evite frases clichês como 'Freud diria que...'. Prefira construções como 'Sob a ótica do inconsciente...', 'Nota-se uma dinâmica...', 'O discurso aponta para...' \n"
-            "6. O objetivo é fornecer 'insights' que ajudem o terapeuta a compreender as camadas subjacentes do caso.\n\n"
+            "2. Sugira possibilidades diagnósticas usando linguagem condicional ('pode indicar', 'sugere', 'observa-se padrão compatível com').\n"
+            "3. Se houver crise de identidade ou vazio existencial, considere perspectivas existenciais (sentido, responsabilidade).\n"
+            "4. Se houver material onírico ou simbólico rico, considere aspectos arquetípicos e simbólicos.\n"
+            "5. Para conflitos relacionais, dinâmicas de desejo ou mecanismos de defesa, considere perspectivas psicodinâmicas.\n"
+            "6. Evite frases clichês. Prefira construções como 'Observa-se...', 'Levanta-se a hipótese de...', 'O discurso sugere...'.\n"
             "Escreva um texto fluido, elegante e clinicamente preciso."
+        )
+
+        intervencoes_prompt = (
+            "Sugira direções de intervenção de forma hipotética e condicional:\n"
+            "1. Apresente possibilidades de intervenção compatíveis com as hipóteses levantadas.\n"
+            "2. Use linguagem sugestiva: 'Pode-se considerar', 'Sugere-se explorar', 'Seria pertinente investigar'.\n"
+            "3. Indique técnicas ou abordagens que possam ser úteis, sem prescrever.\n"
+            "4. Mantenha o tom de sugestão, deixando a decisão final ao psicólogo responsável.\n"
+            "Escreva de forma narrativa e profissional."
         )
 
         messages = [
@@ -307,11 +316,11 @@ async def analyze_text(
             {
                 "role": "user",
                 "content": (
-                    f"{summary_prompt}\n\n{insights_prompt}\n\n"
+                    f"{registro_prompt}\n\n{hipoteses_prompt}\n\n{intervencoes_prompt}\n\n"
                     "Texto completo da sessão (NÃO logar este conteúdo em lugar nenhum):\n"
                     f"{text}\n\n"
                     "Responda apenas em JSON válido, por exemplo:\n"
-                    '{ "summary": "...", "insights": "...", "themes": ["tema1", "tema2"] }'
+                    '{ "registro_descritivo": "...", "hipoteses_clinicas": "...", "direcoes_intervencao": "...", "temas_relevantes": ["tema1", "tema2"] }'
                 ),
             },
         ]
@@ -325,21 +334,24 @@ async def analyze_text(
         content = completion.choices[0].message.content or "{}"
         data = json.loads(content)
 
-        summary = data.get("summary", "")
-        insights = data.get("insights", "")
-        themes = data.get("themes", []) or []
+        registro_descritivo = data.get("registro_descritivo", "")
+        hipoteses_clinicas = data.get("hipoteses_clinicas", "")
+        direcoes_intervencao = data.get("direcoes_intervencao", "")
+        temas_relevantes = data.get("temas_relevantes", []) or []
 
-        if not isinstance(themes, list):
-            themes = [str(themes)]
+        if not isinstance(temas_relevantes, list):
+            temas_relevantes = [str(temas_relevantes)]
 
         return schemas.AnalyzeResponse(
-            summary=summary,
-            insights=insights,
-            themes=[str(t) for t in themes],
+            registro_descritivo=registro_descritivo,
+            hipoteses_clinicas=hipoteses_clinicas,
+            direcoes_intervencao=direcoes_intervencao,
+            temas_relevantes=[str(t) for t in temas_relevantes],
         )
     except Exception as e:
         logger.error(f"Erro análise GPT: {e}")
         raise HTTPException(status_code=500, detail="Erro ao analisar texto")
+
 
 
 @app.post("/save-text-session", status_code=status.HTTP_201_CREATED)
@@ -347,6 +359,9 @@ async def save_text_session(
     body: schemas.SaveTextSessionRequest,
     user: AuthUser = Depends(get_current_user),
 ):
+    # Enforce Daily Charts Limit
+    await subscription.check_and_increment_charts_usage(user.user_id)
+
     supabase = get_supabase_client()
 
     patient = (
@@ -359,8 +374,18 @@ async def save_text_session(
     if not patient.data or patient.data["user_id"] != user.user_id:
         raise HTTPException(status_code=403, detail="Acesso negado ao paciente")
 
-    themes_text = ", ".join(body.themes)
-    full_insights = f"{body.insights}\n\nTemas recorrentes: {themes_text}"
+    # Support both CFP fields (preferred) and legacy fields
+    registro_descritivo = body.registro_descritivo or body.summary or ""
+    hipoteses_clinicas = body.hipoteses_clinicas or ""
+    direcoes_intervencao = body.direcoes_intervencao or ""
+    temas_relevantes = body.temas_relevantes or body.themes or []
+    
+    # For legacy compatibility, combine insights if using old format
+    if body.insights and not body.hipoteses_clinicas:
+        hipoteses_clinicas = body.insights
+    
+    # Combined insights for legacy compatibility
+    full_insights = f"{hipoteses_clinicas}\n\n{direcoes_intervencao}\n\nTemas recorrentes: {themes_text}"
     
     try:
         res = (
@@ -370,9 +395,12 @@ async def save_text_session(
                     "patient_id": body.patient_id,
                     "audio_url": None,
                     "transcription": body.text,
-                    "summary": body.summary,
-                    "insights": full_insights,
-                    "themes": body.themes,
+                    "summary": registro_descritivo,      # Now also used for legacy summary field
+                    "insights": full_insights,           # Now also used for legacy insights field
+                    "themes": temas_relevantes,          # Shared themes field
+                    "registro_descritivo": registro_descritivo,
+                    "hipoteses_clinicas": hipoteses_clinicas,
+                    "direcoes_intervencao": direcoes_intervencao,
                 }
             )
             .execute()
@@ -391,6 +419,9 @@ async def save_session(
     body: schemas.SaveSessionRequest,
     user: AuthUser = Depends(get_current_user),
 ):
+    # Enforce Daily Charts Limit
+    await subscription.check_and_increment_charts_usage(user.user_id)
+
     supabase = get_supabase_client()
 
     patient = (
@@ -403,9 +434,20 @@ async def save_session(
     if not patient.data or patient.data["user_id"] != user.user_id:
         raise HTTPException(status_code=403, detail="Acesso negado ao paciente")
 
-    themes_text = ", ".join(body.themes)
-    full_insights = f"{body.insights}\n\nTemas recorrentes: {themes_text}"
+    # Support both CFP fields (preferred) and legacy fields
+    registro_descritivo = body.registro_descritivo or body.summary or ""
+    hipoteses_clinicas = body.hipoteses_clinicas or ""
+    direcoes_intervencao = body.direcoes_intervencao or ""
+    temas_relevantes = body.temas_relevantes or body.themes or []
+    
+    # For legacy compatibility, combine insights if using old format
+    if body.insights and not body.hipoteses_clinicas:
+        hipoteses_clinicas = body.insights
+    
+    themes_text = ", ".join(temas_relevantes)
+    full_insights = f"{hipoteses_clinicas}\n\n{direcoes_intervencao}\n\nTemas recorrentes: {themes_text}"
     audio_url_value = str(body.audio_url) if body.audio_url is not None else None
+    
     try:
         res = (
             supabase.table("sessions")
@@ -414,9 +456,12 @@ async def save_session(
                     "patient_id": body.patient_id,
                     "audio_url": audio_url_value,
                     "transcription": body.transcription,
-                    "summary": body.summary,
-                    "insights": full_insights,
-                    "themes": body.themes,
+                    "summary": registro_descritivo,      # Now also used for legacy summary field
+                    "insights": full_insights,           # Now also used for legacy insights field
+                    "themes": temas_relevantes,          # Shared themes field
+                    "registro_descritivo": registro_descritivo,
+                    "hipoteses_clinicas": hipoteses_clinicas,
+                    "direcoes_intervencao": direcoes_intervencao,
                 }
             )
             .execute()
@@ -475,7 +520,7 @@ async def get_patient_sessions(
         res = (
             supabase.table("sessions")
             .select(
-                "id, patient_id, audio_url, transcription, summary, insights, themes, created_at"
+                "id, patient_id, audio_url, transcription, summary, insights, themes, registro_descritivo, hipoteses_clinicas, direcoes_intervencao, created_at"
             )
             .eq("patient_id", patient_id)
             .order("created_at", desc=True)
@@ -497,7 +542,7 @@ async def get_session(
 
     session = (
         supabase.table("sessions")
-        .select("id, patient_id, audio_url, transcription, summary, insights, themes, created_at")
+        .select("*")
         .eq("id", session_id)
         .single()
         .execute()
@@ -524,6 +569,7 @@ async def get_session(
 async def get_session_record(
     session_id: str,
     format: str = "pdf",
+    document_type: str = "registro_documental",
     user: AuthUser = Depends(get_current_user),
 ):
     supabase = get_supabase_client()
@@ -557,12 +603,15 @@ async def get_session_record(
         .execute()
     )
     therapist_data = therapist.data if therapist.data else {}
+    approach = therapist_data.get("theoretical_approach", "Integrativa")
 
     try:
         content = generate_clinical_record_content(
             session_data=session.data,
             patient_data=patient.data,
-            client=client
+            client=client,
+            document_type=document_type,
+            approach=approach
         )
         
         if format == "json":
@@ -572,16 +621,18 @@ async def get_session_record(
             record_data=content,
             patient_data=patient.data,
             session_date=datetime.fromisoformat(session.data["created_at"]).strftime("%d/%m/%Y"),
-            therapist_data=therapist_data
+            therapist_data=therapist_data,
+            document_type=document_type
         )
         
+        filename = f"{document_type}_{session_id[:8]}.pdf"
         return Response(
             content=pdf_bytes,
             media_type="application/pdf",
-            headers={"Content-Disposition": f"attachment; filename=prontuario_{session_id[:8]}.pdf"}
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
         )
     except Exception as e:
-        logger.error(f"Erro ao gerar prontuário: {e}")
+        logger.error(f"Erro ao gerar documento {document_type}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -785,24 +836,21 @@ async def chat_copilot(
     
     messages = [
         {"role": "system", "content": f"""
-# COPILOTO PSICANALÍTICO POLÍMATA v2.0
-## Sistema de Análise Clínica Integrada e Gestão
+# ASSISTENTE CLÍNICO E GESTOR v3.0 (CFP COMPLIANT)
 
-Você é um assistente especializado em psicanálise E gestão de clínica.
-Sua função é dupla:
-1. Analisar material clínico (teorias Freudianas, Lacanianas, Junguianas, etc).
-2. Auxiliar nas tarefas administrativas (agendar, cadastrar pacientes, anotar queixas) usando as ferramentas disponíveis.
+Você é um assistente especializado em apoio ao raciocínio clínico, gestão de consultório e elaboração de documentos psicológicos, operando estritamente sob as normas do Conselho Federal de Psicologia (CFP), especialmente as Resoluções 01/2009 e 06/2019.
 
-**REFERÊNCIA DE TEMPO PARA AGENDAMENTOS**:
+Sua função é auxiliar o psicólogo(a) em duas frentes:
+1. **Raciocínio Clínico e Documentação**: Apoiar na organização de prontuários e documentos, usando linguagem ética e técnica (expressões condicionais como 'observa-se', 'sugere-se', 'levanta-se hipótese'). Você pode sugerir possibilidades diagnósticas e intervenções baseadas na abordagem teórica do profissional.
+2. **Gestão Administrativa**: Auxiliar no agendamento, cadastro de pacientes e registro de queixas usando as ferramentas disponíveis.
+
+LINGUAGEM OBRIGATÓRIA:
+- NUNCA seja determinista, diagnóstico ou prescritivo em tom conclusivo.
+- Use sempre tom de apoio e sugestão para o profissional responsável.
+
+**REFERÊNCIA DE TEMPO**:
 - Data e Hora Atual do Usuário: {current_time_str}
 - Fuso Horário: Brasília (UTC-3)
-Use esta data como referência para resolver "hoje", "amanhã", etc.
-Se o usuário disser "hoje às 14h", envie "14:00" para a ferramenta.
-
-REGRAS DE AGENDAMENTO:
-1. SEMPRE use a ferramenta `create_appointment` após obter o `patient_id`.
-2. O horário deve ser EXATAMENTE o que o usuário pedir.
-3. Se ele não der o ID, use `search_patients` primeiro.
 """},
     ]
 
@@ -964,3 +1012,38 @@ async def get_conversation_messages(
         .execute()
     )
     return res.data
+
+@app.get("/api/profile", response_model=schemas.ProfileOut)
+async def get_profile(user: AuthUser = Depends(get_current_user)):
+    supabase = get_supabase_client()
+    res = supabase.table("profiles").select("*").eq("id", user.user_id).single().execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Perfil não encontrado")
+    return res.data
+
+@app.put("/api/profile", response_model=schemas.ProfileOut)
+async def update_profile(
+    body: schemas.ProfileUpdate,
+    user: AuthUser = Depends(get_current_user)
+):
+    supabase = get_supabase_client()
+    update_data = {k: v for k, v in body.dict().items() if v is not None}
+    update_data["updated_at"] = datetime.utcnow().isoformat()
+    
+    res = supabase.table("profiles").update(update_data).eq("id", user.user_id).execute()
+    if not res.data:
+        raise HTTPException(status_code=500, detail="Erro ao atualizar perfil")
+    return res.data[0]
+
+# --- PAYMENT & SUBSCRIPTION ENDPOINTS ---
+
+@app.post("/api/create-checkout-session")
+async def create_checkout_session(
+    body: schemas.CreateCheckoutSessionRequest,
+    user: AuthUser = Depends(get_current_user),
+):
+    return await payment.create_checkout_session(user.user_id, body.email, body.plan)
+
+@app.post("/api/webhook")
+async def stripe_webhook(request: Request):
+    return await payment.handle_stripe_webhook(request)

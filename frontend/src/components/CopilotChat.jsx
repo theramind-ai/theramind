@@ -102,7 +102,7 @@ export function CopilotChat({ isOpen, onClose }) {
                         <MessageSquare className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                        <h2 className="font-bold text-gray-900 dark:text-white">Copiloto Psicanalista</h2>
+                        <h2 className="font-bold text-gray-900 dark:text-white">Copiloto Clínico</h2>
                         <p className="text-xs text-gray-500 dark:text-gray-400">Especialista em pesquisa e teoria</p>
                     </div>
                 </div>
@@ -145,8 +145,8 @@ export function CopilotChat({ isOpen, onClose }) {
                             messages.map((msg, idx) => (
                                 <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                     <div className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${msg.role === 'user'
-                                            ? 'bg-indigo-600 text-white rounded-br-none'
-                                            : 'bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 rounded-bl-none border border-gray-100 dark:border-slate-700'
+                                        ? 'bg-indigo-600 text-white rounded-br-none'
+                                        : 'bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 rounded-bl-none border border-gray-100 dark:border-slate-700'
                                         }`}>
                                         {msg.role === 'user' ? (
                                             <p className="whitespace-pre-wrap">{msg.content}</p>

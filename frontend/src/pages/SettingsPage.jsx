@@ -12,7 +12,8 @@ export default function SettingsPage() {
         crp: '',
         recovery_email: '',
         pix_key: '',
-        pix_key_type: 'CPF' // DEFAULT
+        pix_key_type: 'CPF',
+        theoretical_approach: 'Integrativa'
     });
 
     useEffect(() => {
@@ -40,7 +41,8 @@ export default function SettingsPage() {
                     crp: data.crp || '',
                     recovery_email: data.recovery_email || '',
                     pix_key: data.pix_key || '',
-                    pix_key_type: data.pix_key_type || 'CPF'
+                    pix_key_type: data.pix_key_type || 'CPF',
+                    theoretical_approach: data.theoretical_approach || 'Integrativa'
                 });
             }
         } catch (error) {
@@ -73,6 +75,7 @@ export default function SettingsPage() {
                 recovery_email: profile.recovery_email,
                 pix_key: profile.pix_key,
                 pix_key_type: profile.pix_key_type,
+                theoretical_approach: profile.theoretical_approach,
                 updated_at: new Date()
             };
 
@@ -152,6 +155,27 @@ export default function SettingsPage() {
                                 onChange={(e) => setProfile({ ...profile, recovery_email: e.target.value })}
                                 className="w-full border rounded-md px-3 py-2 bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-blue-500"
                             />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Abordagem Teórica Principal
+                            </label>
+                            <select
+                                value={profile.theoretical_approach}
+                                onChange={(e) => setProfile({ ...profile, theoretical_approach: e.target.value })}
+                                className="w-full border rounded-md px-3 py-2 bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="Integrativa">Integrativa / Multimodal</option>
+                                <option value="TCC">TCC (Terapia Cognitivo-Comportamental)</option>
+                                <option value="Psicanálise">Psicanálise</option>
+                                <option value="Humanismo">Humanismo / Fenomenologia</option>
+                                <option value="Analítica">Psicologia Analítica (Junguiana)</option>
+                                <option value="Sistêmica">Terapia Sistêmica</option>
+                            </select>
+                            <p className="text-xs text-gray-500 mt-1">
+                                Define como o Copiloto e as análises interpretam as sessões.
+                            </p>
                         </div>
                     </div>
 

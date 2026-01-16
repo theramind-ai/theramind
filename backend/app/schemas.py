@@ -4,18 +4,6 @@ from typing import List, Optional
 from datetime import datetime
 
 
-class UploadAudioResponse(BaseModel):
-    audio_url: HttpUrl
-
-
-class TranscribeRequest(BaseModel):
-    audio_url: HttpUrl
-
-
-class TranscribeResponse(BaseModel):
-    transcription: str
-
-
 class AnalyzeRequest(BaseModel):
     transcription: str = Field(min_length=10)
 
@@ -25,26 +13,56 @@ class AnalyzeTextRequest(BaseModel):
 
 
 class AnalyzeResponse(BaseModel):
-    summary: str
-    insights: str
-    themes: List[str]
+    # CFP-compliant field names
+    registro_descritivo: str
+    hipoteses_clinicas: str
+    direcoes_intervencao: str
+    temas_relevantes: List[str]
+    
+    # Backward compatibility properties (deprecated)
+    @property
+    def summary(self) -> str:
+        """Deprecated: Use registro_descritivo instead"""
+        return self.registro_descritivo
+    
+    @property
+    def insights(self) -> str:
+        """Deprecated: Use hipoteses_clinicas and direcoes_intervencao instead"""
+        return f"{self.hipoteses_clinicas}\n\n{self.direcoes_intervencao}"
+    
+    @property
+    def themes(self) -> List[str]:
+        """Deprecated: Use temas_relevantes instead"""
+        return self.temas_relevantes
 
 
 class SaveSessionRequest(BaseModel):
     patient_id: str
     audio_url: Optional[HttpUrl] = None
     transcription: str
-    summary: str
-    insights: str
-    themes: List[str]
+    # CFP-compliant fields (preferred)
+    registro_descritivo: Optional[str] = None
+    hipoteses_clinicas: Optional[str] = None
+    direcoes_intervencao: Optional[str] = None
+    temas_relevantes: Optional[List[str]] = None
+    # Legacy fields (for backward compatibility)
+    summary: Optional[str] = None
+    insights: Optional[str] = None
+    themes: Optional[List[str]] = None
 
 
 class SaveTextSessionRequest(BaseModel):
     patient_id: str
     text: str
-    summary: str
-    insights: str
-    themes: List[str]
+    # CFP-compliant fields (preferred)
+    registro_descritivo: Optional[str] = None
+    hipoteses_clinicas: Optional[str] = None
+    direcoes_intervencao: Optional[str] = None
+    temas_relevantes: Optional[List[str]] = None
+    # Legacy fields (for backward compatibility)
+    summary: Optional[str] = None
+    insights: Optional[str] = None
+    themes: Optional[List[str]] = None
 
 
 class PatientOut(BaseModel):
@@ -64,6 +82,9 @@ class SessionOut(BaseModel):
     summary: Optional[str] = None
     insights: Optional[str] = None
     themes: Optional[List[str]] = None
+    registro_descritivo: Optional[str] = None
+    hipoteses_clinicas: Optional[str] = None
+    direcoes_intervencao: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -106,6 +127,25 @@ class ConversationOut(BaseModel):
     last_message: Optional[str] = None
 
 
+
 class CopilotResponse(BaseModel):
     conversation_id: str
     reply: str
+
+
+class ProfileOut(BaseModel):
+    id: str
+    name: Optional[str] = None
+    crp: Optional[str] = None
+    theoretical_approach: Optional[str] = "Integrativa"
+    updated_at: Optional[datetime] = None
+
+class ProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    crp: Optional[str] = None
+    theoretical_approach: Optional[str] = None
+
+class CreateCheckoutSessionRequest(BaseModel):
+    email: str
+    plan: str
+

@@ -190,28 +190,50 @@ def calculate_session_frequency(sessions: List[Dict[str, Any]]) -> Dict[str, Any
         'sessions_by_weekday': dict(weekday_counts)
     }
 
-def generate_clinical_record_content(session_data: Dict[str, Any], patient_data: Dict[str, Any], client: Any) -> Dict[str, Any]:
-    """Generates structured clinical record content using OpenAI."""
+def generate_clinical_record_content(
+    session_data: Dict[str, Any], 
+    patient_data: Dict[str, Any], 
+    client: Any, 
+    document_type: str = "registro_documental",
+    approach: str = "Integrativa"
+) -> Dict[str, Any]:
+    """
+    Gera conteúdo estruturado para documentos psicológicos seguindo normas CFP.
+    Tipos: registro_documental, relatorio, laudo, parecer, declaracao, atestado.
+    """
+    
+    document_structures = {
+        "registro_documental": "- registro_descritivo\n- hipoteses_clinicas\n- direcoes_intervencao",
+        "relatorio": "- identificacao\n- descricao_demanda\n- procedimento\n- analise\n- conclusao",
+        "laudo": "- identificacao\n- descricao_demanda\n- procedimento\n- analise\n- diagnostico_provisorio\n- conclusao",
+        "parecer": "- identificacao\n- quesitos_analise\n- analise_tecnica\n- conclusao",
+        "declaracao": "- finalidade\n- informacoes_atendimento",
+        "atestado": "- finalidade\n- justificativa_ausencia_ou_aptidao"
+    }
+    
+    structure = document_structures.get(document_type, document_structures["registro_documental"])
     
     system_prompt = (
-        "Você é um supervisor clínico psicanalítico rigoroso. "
-        "Sua tarefa é estruturar um Prontuário Clínico formal com base nos dados da sessão."
+        "Você é um assistente especializado em redação de documentos psicológicos conforme as normas do "
+        "Conselho Federal de Psicologia (CFP), especialmente a Resolução CFP nº 06/2019."
+        f"Você redige na abordagem {approach}."
+        "Use linguagem ética, condicional e técnica. NUNCA seja determinista."
     )
     
     user_prompt = f"""
+    Tipo de Documento: {document_type}
     Dados do Paciente: {patient_data.get('name')}
-    Dados da Sessão: {session_data.get('created_at')}
-    Transcrição/Resumo: {session_data.get('transcription') or session_data.get('summary')}
-    Insights Anteriores: {session_data.get('insights')}
+    Abordagem do Terapeuta: {approach}
+    Conteúdo Base da Sessão: {session_data.get('transcription') or session_data.get('summary')}
+    Hipóteses e Direções: {session_data.get('insights') or (session_data.get('hipoteses_clinicas', '') + ' ' + session_data.get('direcoes_intervencao', ''))}
     
-    Gere um JSON com os seguintes campos exatos para o prontuário:
-    1. queixa_principal: (foco da sessão)
-    2. conteudo_sessao: (associações, relatos). Resuma em parágrafos.
-    3. observacoes_clinicas: (afetos, defesas, dinâmica transferencial). Use terminologia técnica (Freud/Lacan).
-    4. intervencoes: (pontuações, cortes, interpretações do analista).
-    5. evolucao: (processos em curso).
-    6. riscos: (suicídio, autolesão, etc - seja conservador).
-    7. plano_terapeutico: (próximos passos).
+    Gere um JSON com os campos correspondentes a esta estrutura:
+    {structure}
+    
+    Instruções Adicionais:
+    1. Identificação: Nome, finalidade, solicitante (se não houver, use 'A própria pessoa').
+    2. Analise: Integre os dados com a abordagem {approach}.
+    3. Conclusão: Sempre condicional, sugerindo encaminhamentos ou próximos passos.
     """
     
     response = client.chat.completions.create(
@@ -226,8 +248,14 @@ def generate_clinical_record_content(session_data: Dict[str, Any], patient_data:
     import json
     return json.loads(response.choices[0].message.content)
 
-def generate_clinical_record_pdf(record_data: Dict[str, Any], patient_data: Dict[str, Any], session_date: str, therapist_data: Dict[str, Any] = None) -> bytes:
-    """Generates the PDF file for the clinical record."""
+def generate_clinical_record_pdf(
+    record_data: Dict[str, Any], 
+    patient_data: Dict[str, Any], 
+    session_date: str, 
+    therapist_data: Dict[str, Any] = None,
+    document_type: str = "registro_documental"
+) -> bytes:
+    """Generates the PDF file for the clinical record / psychological document."""
     from reportlab.lib.pagesizes import letter
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -239,39 +267,56 @@ def generate_clinical_record_pdf(record_data: Dict[str, Any], patient_data: Dict
     styles = getSampleStyleSheet()
     elements = []
     
+    document_titles = {
+        "registro_documental": "Registro Documental de Sessão",
+        "relatorio": "Relatório Psicológico",
+        "laudo": "Laudo Psicológico",
+        "parecer": "Parecer Psicológico",
+        "declaracao": "Declaração",
+        "atestado": "Atestado Psicológico"
+    }
+    
+    title_text = document_titles.get(document_type, "Documento Psicológico")
+    
     # Styles
     title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=16, spaceAfter=20, alignment=1)
-    header_style = ParagraphStyle('Header', parent=styles['Normal'], fontSize=10, textColor=colors.gray)
     section_style = ParagraphStyle('Section', parent=styles['Heading2'], fontSize=12, spaceBefore=15, spaceAfter=10, textColor=colors.darkblue)
     text_style = ParagraphStyle('Text', parent=styles['Normal'], fontSize=11, leading=14)
     
     # Header Info
-    elements.append(Paragraph("Prontuário Clínico – Sessão Psicanalítica", title_style))
+    elements.append(Paragraph(title_text, title_style))
     elements.append(Spacer(1, 10))
     
     # Format Patient Data for the section
     patient_info = (
         f"<b>Nome:</b> {patient_data.get('name') or 'N/A'}\n"
-        f"<b>Email:</b> {patient_data.get('email') or 'N/A'}\n"
-        f"<b>Telefone:</b> {patient_data.get('phone') or 'N/A'}\n"
-        f"<b>Data da sessão:</b> {session_date}"
+        f"<b>Data:</b> {session_date}"
     )
+    elements.append(Paragraph("👤 Identificação", section_style))
+    elements.append(Paragraph(patient_info, text_style))
 
-    # Sections
-    sections = [
-        ("👤 Dados do Paciente", patient_info),
-        ("🧠 1. Queixa principal / Motivo da sessão", record_data.get('queixa_principal', '-')),
-        ("🗣️ 2. Conteúdo da sessão", record_data.get('conteudo_sessao', '-')),
-        ("🔍 3. Observações clínicas", record_data.get('observacoes_clinicas', '-')),
-        ("🔄 4. Intervenções do analista", record_data.get('intervencoes', '-')),
-        ("📈 5. Evolução / Processos em curso", record_data.get('evolucao', '-')),
-        ("⚠️ 6. Riscos / Observações importantes", record_data.get('riscos', '-')),
-        ("📝 7. Plano terapêutico / Encaminhamentos", record_data.get('plano_terapeutico', '-'))
-    ]
-    
-    for title, content in sections:
-        elements.append(Paragraph(title, section_style))
-        elements.append(Paragraph(content.replace('\n', '<br/>'), text_style))
+    # Field Mappings (technical to display name)
+    field_labels = {
+        "registro_descritivo": "📝 Registro Descritivo",
+        "hipoteses_clinicas": "🧠 Hipóteses Clínicas",
+        "direcoes_intervencao": "🎯 Direções de Intervenção",
+        "descricao_demanda": "📋 Descrição da Demanda",
+        "procedimento": "⚙️ Procedimento",
+        "analise": "🔍 Análise",
+        "conclusao": "✅ Conclusão",
+        "diagnostico_provisorio": "🩺 Diagnóstico Provisório",
+        "quesitos_analise": "❓ Quesitos de Análise",
+        "analise_tecnica": "🔬 Análise Técnica",
+        "finalidade": "🎯 Finalidade",
+        "informacoes_atendimento": "ℹ️ Informações de Atendimento",
+        "justificativa_ausencia_ou_aptidao": "✔️ Justificativa"
+    }
+
+    for key, value in record_data.items():
+        if key in ["identificacao", "id"]: continue
+        label = field_labels.get(key, key.replace('_', ' ').title())
+        elements.append(Paragraph(label, section_style))
+        elements.append(Paragraph(str(value).replace('\n', '<br/>'), text_style))
         elements.append(Spacer(1, 10))
         
     # Therapist Info & Signature

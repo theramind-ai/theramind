@@ -6,6 +6,7 @@ import PatientsPage from './pages/PatientsPage.jsx'
 import EditPatientPage from './pages/EditPatientPage.jsx' // Import
 import SessionsPage from './pages/SessionsPage.jsx'
 import SessionPage from './pages/SessionPage.jsx' // Import
+import PricingPage from './pages/PricingPage.jsx'; // Import PricingPage
 import PatientPage from './pages/PatientPage.jsx'
 import { supabase } from './lib/supabaseClient.js'
 import { Layout } from './components/Layout.jsx'
@@ -53,6 +54,11 @@ function App() {
         <Route
           path="/verify-email"
           element={!session ? <VerifyEmailPage /> : <Navigate to="/dashboard" />}
+        />
+
+        <Route
+          path="/pricing"
+          element={<PricingPage />}
         />
 
         {/* Dashboard (Metrics) */}

@@ -144,26 +144,38 @@ export default function SessionPage() {
                     </p>
                 </div>
 
-                {/* Resumo */}
-                {session.summary && (
+                {/* Registro Descritivo (CFP) */}
+                {(session.registro_descritivo || session.summary) && (
                     <div className="bg-blue-50 dark:bg-blue-900/30 p-6 rounded-lg shadow-sm transition-colors">
-                        <h2 className="text-lg font-semibold text-blue-900 dark:text-blue-200 mb-3">
-                            📝 Resumo
+                        <h2 className="text-lg font-semibold text-blue-900 dark:text-blue-200 mb-3 flex items-center">
+                            <span className="mr-2">📝</span> Registro Descritivo
                         </h2>
                         <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
-                            {session.summary}
+                            {session.registro_descritivo || session.summary}
                         </p>
                     </div>
                 )}
 
-                {/* Insights */}
-                {session.insights && (
+                {/* Hipóteses Clínicas (CFP) */}
+                {(session.hipoteses_clinicas || (session.insights && !session.direcoes_intervencao)) && (
                     <div className="bg-purple-50 dark:bg-purple-900/30 p-6 rounded-lg shadow-sm transition-colors">
-                        <h2 className="text-lg font-semibold text-purple-900 dark:text-purple-200 mb-3">
-                            💡 Insights
+                        <h2 className="text-lg font-semibold text-purple-900 dark:text-purple-200 mb-3 flex items-center">
+                            <span className="mr-2">💡</span> Hipóteses Clínicas
                         </h2>
                         <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
-                            {session.insights}
+                            {session.hipoteses_clinicas || session.insights}
+                        </p>
+                    </div>
+                )}
+
+                {/* Direções de Intervenção (CFP) */}
+                {session.direcoes_intervencao && (
+                    <div className="bg-amber-50 dark:bg-amber-900/30 p-6 rounded-lg shadow-sm transition-colors">
+                        <h2 className="text-lg font-semibold text-amber-900 dark:text-amber-200 mb-3 flex items-center">
+                            <span className="mr-2">🎯</span> Direções de Intervenção
+                        </h2>
+                        <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
+                            {session.direcoes_intervencao}
                         </p>
                     </div>
                 )}

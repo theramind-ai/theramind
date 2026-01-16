@@ -23,20 +23,21 @@ export default function TextAnalysisInput({ patientId, onAnalysisComplete }) {
         text: textInput
       });
 
-      // 2. Salvar a sessão com os dados da análise
+      // 2. Salvar a sessão com os dados da análise (padrão CFP)
       await api.post('/save-text-session', {
         patient_id: patientId,
         text: textInput,
-        summary: analysis.summary,
-        insights: analysis.insights,
-        themes: analysis.themes
+        registro_descritivo: analysis.registro_descritivo,
+        hipoteses_clinicas: analysis.hipoteses_clinicas,
+        direcoes_intervencao: analysis.direcoes_intervencao,
+        temas_relevantes: analysis.temas_relevantes
       });
 
       // Limpar o campo de texto
       setTextInput('');
 
       // Mostrar mensagem de sucesso
-      alert('Análise salva com sucesso!');
+      alert('Sessão registrada e analisada com sucesso!');
 
       if (onAnalysisComplete) {
         onAnalysisComplete();

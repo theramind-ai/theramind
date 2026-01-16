@@ -178,8 +178,8 @@ export default function PatientPage() {
                             {formatSessionDate(session.created_at)}
                           </h3>
                           <p className="text-gray-600 dark:text-gray-300 text-sm mt-1 line-clamp-2">
-                            {session.summary ||
-                              session.insights?.summary ||
+                            {session.registro_descritivo ||
+                              session.summary ||
                               session.transcription?.substring(0, 150) ||
                               'Sem conteúdo disponível'}...
                           </p>
