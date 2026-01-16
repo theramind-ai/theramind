@@ -12,6 +12,7 @@ export default function SessionPage() {
     const [generatingRecord, setGeneratingRecord] = useState(false);
     const [viewingRecord, setViewingRecord] = useState(false);
     const [recordData, setRecordData] = useState(null);
+    const [documentType, setDocumentType] = useState('registro_documental');
 
     useEffect(() => {
         fetchSession();
@@ -33,7 +34,7 @@ export default function SessionPage() {
     const handleDownloadRecord = async () => {
         try {
             setGeneratingRecord(true);
-            const response = await api.get(`/session/${sessionId}/record`, {
+            const response = await api.get(`/session/${sessionId}/record?document_type=${documentType}`, {
                 responseType: 'blob'
             });
 
@@ -69,7 +70,7 @@ export default function SessionPage() {
     const handleViewRecord = async () => {
         try {
             setGeneratingRecord(true);
-            const response = await api.get(`/session/${sessionId}/record?format=json`);
+            const response = await api.get(`/session/${sessionId}/record?format=json&document_type=${documentType}`);
             setRecordData(response);
             setViewingRecord(true);
         } catch (err) {
@@ -109,27 +110,47 @@ export default function SessionPage() {
                 </h1>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:justify-end gap-3 sm:gap-4 mb-4 sm:mb-6">
-                <button
-                    onClick={handleViewRecord}
-                    disabled={generatingRecord}
-                    className="flex items-center justify-center px-4 py-3 sm:py-2 bg-white text-indigo-600 border border-indigo-600 rounded-md hover:bg-indigo-50 disabled:opacity-50 transition-colors"
-                >
-                    <Eye className="mr-2" size={18} />
-                    Ver Prontuário
-                </button>
-                <button
-                    onClick={handleDownloadRecord}
-                    disabled={generatingRecord}
-                    className="flex items-center justify-center px-4 py-3 sm:py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-                >
-                    {generatingRecord ? 'Gerando...' : (
-                        <>
-                            <FileText className="mr-2" size={18} />
-                            Baixar PDF
-                        </>
-                    )}
-                </button>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
+                <div className="flex-1 w-full max-w-xs">
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                        Tipo de Documento
+                    </label>
+                    <select
+                        value={documentType}
+                        onChange={(e) => setDocumentType(e.target.value)}
+                        className="w-full bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-md text-sm py-2 px-3 focus:ring-blue-500"
+                    >
+                        <option value="registro_documental">Registro Documental</option>
+                        <option value="relatorio">Relatório Psicológico</option>
+                        <option value="laudo">Laudo Pericial</option>
+                        <option value="parecer">Parecer Técnico</option>
+                        <option value="declaracao">Declaração</option>
+                        <option value="atestado">Atestado Psicológico</option>
+                    </select>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                    <button
+                        onClick={handleViewRecord}
+                        disabled={generatingRecord}
+                        className="flex items-center justify-center px-4 py-3 sm:py-2 bg-white text-indigo-600 border border-indigo-600 rounded-md hover:bg-indigo-50 disabled:opacity-50 transition-colors"
+                    >
+                        <Eye className="mr-2" size={18} />
+                        Visualizar
+                    </button>
+                    <button
+                        onClick={handleDownloadRecord}
+                        disabled={generatingRecord}
+                        className="flex items-center justify-center px-4 py-3 sm:py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                    >
+                        {generatingRecord ? 'Gerando...' : (
+                            <>
+                                <FileText className="mr-2" size={18} />
+                                Baixar PDF
+                            </>
+                        )}
+                    </button>
+                </div>
             </div>
 
             {/* Conteúdo da Sessão */}

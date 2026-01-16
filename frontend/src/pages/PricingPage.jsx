@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { Check, X } from 'lucide-react';
-import { api } from '../api';
+import api from '../lib/api';
 
 export default function PricingPage() {
     const [currentPlan, setCurrentPlan] = useState('free');
@@ -78,8 +78,8 @@ export default function PricingPage() {
                     onClick={() => handleSubscribe(planId)}
                     disabled={isCurrent || loading || price === 0}
                     className={`w-full py-3 rounded-lg font-bold transition-colors ${isCurrent
-                            ? 'bg-gray-100 text-gray-500 cursor-default'
-                            : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        ? 'bg-gray-100 text-gray-500 cursor-default'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
                         }`}
                 >
                     {isCurrent ? "Plano Atual" : loading ? "Processando..." : "Assinar Agora"}
