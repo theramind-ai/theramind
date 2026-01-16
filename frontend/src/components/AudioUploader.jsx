@@ -9,60 +9,71 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
   const [status, setStatus] = useState('idle'); // idle, recording, analyzing, saving, success, error
   const [error, setError] = useState(null);
 
+  const [isSupported, setIsSupported] = useState(true);
   const recognitionRef = useRef(null);
 
   useEffect(() => {
-    // Inicializar SpeechRecognition
+    // Check if Web Speech API is supported
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'pt-BR';
-
-      recognition.onresult = (event) => {
-        let interim = '';
-        let final = '';
-
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            final += event.results[i][0].transcript;
-          } else {
-            interim += event.results[i][0].transcript;
-          }
-        }
-
-        setTranscription(prev => prev + ' ' + final);
-        setInterimTranscript(interim);
-      };
-
-      recognition.onerror = (event) => {
-        console.error('Speech recognition error', event.error);
-        if (event.error === 'not-allowed') {
-          setError('Permissão ao microfone negada.');
-        } else {
-          setError('Erro na transcrição automática.');
-        }
-        setStatus('error');
-        setIsRecording(false);
-      };
-
-      recognition.onend = () => {
-        // Se ainda estiver no modo recording, reinicia (evita paradas automáticas do browser)
-        if (isRecording) {
-          recognition.start();
-        }
-      };
-
-      recognitionRef.current = recognition;
-    } else {
+    if (!SpeechRecognition) {
+      setIsSupported(false);
       setError('Seu navegador não suporta transcrição direta. Recomendamos usar Chrome ou Edge.');
+      console.warn('Web Speech API not supported in this browser');
+      return;
     }
+
+    // Initialize Speech Recognition
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'pt-BR';
+
+    recognition.onresult = (event) => {
+      let interim = '';
+      let final = '';
+
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          final += event.results[i][0].transcript;
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
+
+      setTranscription(prev => prev + ' ' + final);
+      setInterimTranscript(interim);
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      if (event.error === 'not-allowed') {
+        setError('Permissão ao microfone negada. Habilite nas configurações do navegador.');
+      } else if (event.error === 'no-speech') {
+        setError('Nenhuma fala detectada. Tente novamente.');
+      } else {
+        setError(`Erro na transcrição: ${event.error}`);
+      }
+      setStatus('error');
+      setIsRecording(false);
+    };
+
+    recognition.onend = () => {
+      // Se ainda estiver no modo recording, reinicia (evita paradas automáticas do browser)
+      if (isRecording) {
+        try {
+          recognition.start();
+        } catch (e) {
+          console.error("Erro ao reiniciar recognition:", e);
+        }
+      }
+    };
+
+    recognitionRef.current = recognition;
 
     return () => {
       if (recognitionRef.current) {
-        recognitionRef.current.stop();
+        recognitionRef.current.abort();
       }
     };
   }, [isRecording]);
@@ -132,6 +143,14 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
       default: return 'Pronto para iniciar';
     }
   };
+
+  if (!isSupported) {
+    return (
+      <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 rounded-lg text-sm text-amber-700 text-center">
+        {error}
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700">
