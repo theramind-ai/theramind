@@ -60,6 +60,16 @@ function App() {
           path="/pricing"
           element={<PricingPage />}
         />
+        <Route
+          path="/subscriptions"
+          element={
+            <ProtectedRoute session={session}>
+              <Layout>
+                <PricingPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
 
         {/* Dashboard (Metrics) */}
         <Route

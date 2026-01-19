@@ -56,8 +56,13 @@ export default function OnboardingPage() {
         setLoading(true);
         setError(null);
 
-        if (!name.trim() || !crp.trim()) {
-            setError('Por favor, preencha o Nome e o CRP.');
+        const missing = [];
+        if (!name.trim()) missing.push('Nome');
+        if (!crp.trim()) missing.push('CRP');
+        if (!termsAccepted) missing.push('Termos de Uso');
+
+        if (missing.length > 0) {
+            setError(`Os seguintes campos são obrigatórios: ${missing.join(', ')}.`);
             setLoading(false);
             return;
         }

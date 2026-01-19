@@ -7,14 +7,14 @@ from loguru import logger
 PLAN_CONFIG = {
     "free": {
         "daily_charts_limit": 3,
-        "features": [] # No advanced features
+        "features": ["ai_analysis"] # Permite análise básica
     },
     "plus": {
         "daily_charts_limit": 10,
         "features": ["ai_analysis", "scheduling"]
     },
     "premium": {
-        "daily_charts_limit": 999999, # Unlimited
+        "daily_charts_limit": 1000, # Praticamente ilimitado
         "features": ["ai_analysis", "scheduling", "copilot"]
     }
 }

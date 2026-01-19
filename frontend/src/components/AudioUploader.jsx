@@ -4,6 +4,7 @@ import api from '../lib/api';
 
 export default function AudioUploader({ patientId, onUploadComplete }) {
   const [isRecording, setIsRecording] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [transcription, setTranscription] = useState('');
   const [interimTranscript, setInterimTranscript] = useState('');
   const [status, setStatus] = useState('idle'); // idle, recording, analyzing, saving, success, error
@@ -50,17 +51,18 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
       if (event.error === 'not-allowed') {
         setError('Permissão ao microfone negada. Habilite nas configurações do navegador.');
       } else if (event.error === 'no-speech') {
-        setError('Nenhuma fala detectada. Tente novamente.');
+        // Silently handle no-speech if we're technically still "recording" or "paused"
+        console.warn('No speech detected');
       } else {
         setError(`Erro na transcrição: ${event.error}`);
+        setStatus('error');
+        setIsRecording(false);
       }
-      setStatus('error');
-      setIsRecording(false);
     };
 
     recognition.onend = () => {
-      // Se ainda estiver no modo recording, reinicia (evita paradas automáticas do browser)
-      if (isRecording) {
+      // Se ainda estiver no modo recording e NÃO estiver pausado, reinicia
+      if (isRecording && !isPaused) {
         try {
           recognition.start();
         } catch (e) {
@@ -76,7 +78,7 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
         recognitionRef.current.abort();
       }
     };
-  }, [isRecording]);
+  }, [isRecording, isPaused]);
 
   const startRecording = () => {
     if (!recognitionRef.current) return;
@@ -86,6 +88,19 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
     setInterimTranscript('');
     setStatus('recording');
     setIsRecording(true);
+    setIsPaused(false);
+    recognitionRef.current.start();
+  };
+
+  const pauseRecording = () => {
+    if (!recognitionRef.current || !isRecording) return;
+    setIsPaused(true);
+    recognitionRef.current.stop();
+  };
+
+  const resumeRecording = () => {
+    if (!recognitionRef.current || !isRecording) return;
+    setIsPaused(false);
     recognitionRef.current.start();
   };
 
@@ -93,6 +108,7 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
     if (!recognitionRef.current) return;
 
     setIsRecording(false);
+    setIsPaused(false);
     recognitionRef.current.stop();
 
     const finalFullText = (transcription + ' ' + interimTranscript).trim();
@@ -135,7 +151,8 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
 
   const getStatusMessage = () => {
     switch (status) {
-      case 'recording': return 'Ouvindo e transcrevendo...';
+      case 'recording':
+        return isPaused ? 'Gravação pausada' : 'Ouvindo e transcrevendo...';
       case 'analyzing': return 'Processando análise clínica (IA)...';
       case 'saving': return 'Salvando prontuário...';
       case 'success': return 'Sessão registrada com sucesso!';
@@ -157,20 +174,41 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
       <div className="flex flex-col items-center justify-center space-y-6">
 
         {/* Visual Feedback Circle */}
-        <div className={`relative w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 ${isRecording ? 'bg-red-100 dark:bg-red-900/30' : 'bg-blue-50 dark:bg-blue-900/20'
+        <div className={`relative w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 ${isRecording ? (isPaused ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-red-100 dark:bg-red-900/30') : 'bg-blue-50 dark:bg-blue-900/20'
           }`}>
-          {isRecording && (
+          {isRecording && !isPaused && (
             <div className="absolute inset-0 rounded-full animate-ping bg-red-400/20" />
           )}
 
           {status === 'idle' || status === 'recording' ? (
-            <button
-              onClick={isRecording ? stopRecording : startRecording}
-              className={`p-5 rounded-full text-white shadow-lg transition-all duration-200 hover:scale-110 active:scale-95 ${isRecording ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-600 hover:bg-blue-700'
-                }`}
-            >
-              {isRecording ? <Square size={24} fill="white" /> : <Mic size={24} />}
-            </button>
+            <div className="flex space-x-4">
+              {!isRecording ? (
+                <button
+                  onClick={startRecording}
+                  className="p-5 rounded-full text-white shadow-lg transition-all duration-200 hover:scale-110 active:scale-95 bg-blue-600 hover:bg-blue-700"
+                >
+                  <Mic size={24} />
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={isPaused ? resumeRecording : pauseRecording}
+                    className={`p-5 rounded-full text-white shadow-lg transition-all duration-200 hover:scale-110 active:scale-95 ${isPaused ? 'bg-green-500 hover:bg-green-600' : 'bg-amber-500 hover:bg-amber-600'
+                      }`}
+                    title={isPaused ? "Retomar" : "Pausar"}
+                  >
+                    {isPaused ? <Mic size={24} /> : <div className="flex space-x-1"><div className="w-1.5 h-6 bg-white rounded-full" /><div className="w-1.5 h-6 bg-white rounded-full" /></div>}
+                  </button>
+                  <button
+                    onClick={stopRecording}
+                    className="p-5 rounded-full text-white shadow-lg transition-all duration-200 hover:scale-110 active:scale-95 bg-red-500 hover:bg-red-600"
+                    title="Finalizar"
+                  >
+                    <Square size={24} fill="white" />
+                  </button>
+                </>
+              )}
+            </div>
           ) : status === 'success' ? (
             <CheckCircle size={40} className="text-green-500 animate-bounce" />
           ) : status === 'error' ? (
@@ -182,7 +220,8 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
 
         {/* Status Message */}
         <div className="text-center">
-          <p className={`text-sm font-semibold uppercase tracking-wider ${isRecording ? 'text-red-500' : 'text-slate-500 dark:text-slate-400'}`}>
+          <p className={`text-sm font-semibold uppercase tracking-wider ${isRecording ? (isPaused ? 'text-amber-500' : 'text-red-500') : 'text-slate-500 dark:text-slate-400'
+            }`}>
             {getStatusMessage()}
           </p>
         </div>
