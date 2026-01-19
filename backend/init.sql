@@ -1,18 +1,22 @@
 -- ############################################################################
 -- THERAMIND DATABASE REBUILD (V2 - CFP COMPLIANT)
-hhjhjhjhjhjhjhjjhjhknhihjghggjmgjhjgkghjgjgihhiuhkuiljjkljjikyhkjnmnjbmmgkghmbn,mn,mn,jmmmjm,mjmn,mjhmjnnmmnmhmnmnmnmnmmnmnbm,b
--- 1. CLEANUPghhnhnjhnnjgjhjhhnbhhnjhnhbjngjbngugmugugjghgjghjjhuyhnugtynjkgiouyukuhikukknvngngnjjhjjhmnmmjjjm
+-- This script resets the entire public schema. 
+-- WARNING: ALL DATA WILL BE LOST.
+-- ############################################################################
+
+-- 1. CLEANUP
 DROP TABLE IF EXISTS public.appointments CASCADE;
 DROP TABLE IF EXISTS public.profiles CASCADE;
 DROP TABLE IF EXISTS public.copilot_messages CASCADE;
 DROP TABLE IF EXISTS public.copilot_conversations CASCADE;
 DROP TABLE IF EXISTS public.sessions CASCADE;
-DROP TABLE IF EXISTS public.patients CASCADE;ngbhnhjhhjhhjhnmjkhmhjnmnmgmngmhmhjhmjmnjhknijk,hkhljmykgkjglghjklnhklhnlh
+DROP TABLE IF EXISTS public.patients CASCADE;
 
 DROP FUNCTION IF EXISTS public.handle_new_user_profile CASCADE;
-.,nmnkmj,kjmmkm,j,,n,hnmk nmjnmnkjnmkkjkjl,lmlk.k,ll,..jm,,h,mmnnnjynynghtghhytytyhghhhgjbvbbvb bbvnbncnnvnn
+DROP FUNCTION IF EXISTS public.update_updated_at_column CASCADE;
+
 -- 2. CORE TABLES
-myjymjyjhmhjhjhjhkmgjgjgjjgjgjggjgjgkkkgkkglhkmmjmnbjbmhknhkhnn bnnbnbnjgn j
+
 -- PATIENTS
 CREATE TABLE public.patients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -64,7 +68,7 @@ CREATE TABLE public.sessions (
     direcoes_intervencao TEXT,
     temas_relevantes TEXT[],
     
-    -- Legacy Compatibility Fields
+    -- Legacy Compatibility Fields (mapped to above in code)
     summary TEXT,
     insights TEXT,
     themes TEXT[],
@@ -110,13 +114,40 @@ CREATE TABLE public.copilot_messages (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 3. SECURITY (RLS - Optional for local dev but kept for consistency)
+-- 3. SECURITY (RLS)
 ALTER TABLE public.patients ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.copilot_conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.copilot_messages ENABLE ROW LEVEL SECURITY;
+
+-- Policies: Patients
+CREATE POLICY "Users can manage their own patients" ON public.patients 
+    FOR ALL USING (auth.uid() = user_id);
+
+-- Policies: Profiles
+CREATE POLICY "Users can manage their own profile" ON public.profiles 
+    FOR ALL USING (auth.uid() = id);
+
+-- Policies: Sessions (Linked to owned patients)
+CREATE POLICY "Users can manage their own sessions" ON public.sessions 
+    FOR ALL USING (
+        EXISTS (SELECT 1 FROM public.patients WHERE patients.id = sessions.patient_id AND patients.user_id = auth.uid())
+    );
+
+-- Policies: Appointments
+CREATE POLICY "Users can manage their own appointments" ON public.appointments 
+    FOR ALL USING (auth.uid() = user_id);
+
+-- Policies: Copilot
+CREATE POLICY "Users can manage their own conversations" ON public.copilot_conversations 
+    FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage their own messages" ON public.copilot_messages 
+    FOR ALL USING (
+        EXISTS (SELECT 1 FROM public.copilot_conversations WHERE copilot_conversations.id = copilot_messages.conversation_id AND copilot_conversations.user_id = auth.uid())
+    );
 
 -- 4. TRIGGERS & FUNCTIONS
 
@@ -130,11 +161,9 @@ BEGIN
 END;
 $$ language plpgsql security definer;
 
--- Note: In local Docker, auth.users might not exist if not using Supabase image.
--- This trigger is mainly for Supabase environment.
--- CREATE TRIGGER on_auth_user_created_profile
---   AFTER INSERT ON auth.users
---   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user_profile();
+CREATE TRIGGER on_auth_user_created_profile
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user_profile();
 
 -- Auto-update updated_at
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
@@ -149,3 +178,7 @@ CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON public.profiles FOR E
 CREATE TRIGGER update_sessions_updated_at BEFORE UPDATE ON public.sessions FOR EACH ROW EXECUTE PROCEDURE public.update_updated_at_column();
 CREATE TRIGGER update_appointments_updated_at BEFORE UPDATE ON public.appointments FOR EACH ROW EXECUTE PROCEDURE public.update_updated_at_column();
 CREATE TRIGGER update_copilot_updated_at BEFORE UPDATE ON public.copilot_conversations FOR EACH ROW EXECUTE PROCEDURE public.update_updated_at_column();
+
+-- ############################################################################
+-- REBUILD COMPLETE
+-- ############################################################################
