@@ -13,6 +13,15 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
   const [isSupported, setIsSupported] = useState(true);
   const recognitionRef = useRef(null);
 
+  // Refs to avoid closure issues in handlers
+  const isRecordingRef = useRef(isRecording);
+  const isPausedRef = useRef(isPaused);
+
+  useEffect(() => {
+    isRecordingRef.current = isRecording;
+    isPausedRef.current = isPaused;
+  }, [isRecording, isPaused]);
+
   useEffect(() => {
     // Check if Web Speech API is supported
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -30,6 +39,10 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
     recognition.interimResults = true;
     recognition.lang = 'pt-BR';
 
+    recognition.onstart = () => {
+      console.log('SpeechRecognition.onstart');
+    };
+
     recognition.onresult = (event) => {
       let interim = '';
       let final = '';
@@ -42,7 +55,10 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
         }
       }
 
-      setTranscription(prev => prev + ' ' + final);
+      if (final) {
+        console.log('Transcription (final):', final);
+        setTranscription(prev => prev + ' ' + final);
+      }
       setInterimTranscript(interim);
     };
 
@@ -51,7 +67,6 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
       if (event.error === 'not-allowed') {
         setError('Permissão ao microfone negada. Habilite nas configurações do navegador.');
       } else if (event.error === 'no-speech') {
-        // Silently handle no-speech if we're technically still "recording" or "paused"
         console.warn('No speech detected');
       } else {
         setError(`Erro na transcrição: ${event.error}`);
@@ -61,9 +76,11 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
     };
 
     recognition.onend = () => {
+      console.log('SpeechRecognition.onend | isRecording:', isRecordingRef.current, 'isPaused:', isPausedRef.current);
       // Se ainda estiver no modo recording e NÃO estiver pausado, reinicia
-      if (isRecording && !isPaused) {
+      if (isRecordingRef.current && !isPausedRef.current) {
         try {
+          console.log('Restarting recognition...');
           recognition.start();
         } catch (e) {
           console.error("Erro ao reiniciar recognition:", e);
@@ -74,14 +91,16 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
     recognitionRef.current = recognition;
 
     return () => {
+      console.log('Cleaning up recognition effect...');
       if (recognitionRef.current) {
         recognitionRef.current.abort();
       }
     };
-  }, [isRecording, isPaused]);
+  }, []); // Only run once on mount
 
   const startRecording = () => {
     if (!recognitionRef.current) return;
+    console.log('Action: startRecording');
 
     setError(null);
     setTranscription('');
@@ -89,23 +108,35 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
     setStatus('recording');
     setIsRecording(true);
     setIsPaused(false);
-    recognitionRef.current.start();
+
+    try {
+      recognitionRef.current.start();
+    } catch (e) {
+      console.error("Error starting recognition:", e);
+    }
   };
 
   const pauseRecording = () => {
     if (!recognitionRef.current || !isRecording) return;
+    console.log('Action: pauseRecording');
     setIsPaused(true);
     recognitionRef.current.stop();
   };
 
   const resumeRecording = () => {
     if (!recognitionRef.current || !isRecording) return;
+    console.log('Action: resumeRecording');
     setIsPaused(false);
-    recognitionRef.current.start();
+    try {
+      recognitionRef.current.start();
+    } catch (e) {
+      console.error("Error resuming recognition:", e);
+    }
   };
 
   const stopRecording = async () => {
     if (!recognitionRef.current) return;
+    console.log('Action: stopRecording');
 
     setIsRecording(false);
     setIsPaused(false);

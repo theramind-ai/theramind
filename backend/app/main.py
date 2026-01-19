@@ -129,8 +129,9 @@ async def analyze_transcription(
     body: schemas.AnalyzeRequest,
     user: AuthUser = Depends(get_current_user),
 ):
-    # Enforce AI Analysis permission
+    # Enforce AI Analysis permission and Daily Limit
     await subscription.check_subscription_feature(user.user_id, "ai_analysis")
+    await subscription.check_charts_usage_limit(user.user_id)
     
     transcription = body.transcription
 
@@ -244,9 +245,10 @@ async def analyze_text(
     body: schemas.AnalyzeTextRequest,
     user: AuthUser = Depends(get_current_user),
 ):
-    # Enforce AI Analysis permission
+    # Enforce AI Analysis permission and Daily Limit
     await subscription.check_subscription_feature(user.user_id, "ai_analysis")
-
+    await subscription.check_charts_usage_limit(user.user_id)
+    
     text = body.text
 
     # Fetch Therapist theoretical approach

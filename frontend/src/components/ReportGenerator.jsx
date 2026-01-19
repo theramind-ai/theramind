@@ -59,17 +59,32 @@ export default function ReportGenerator({ patientId }) {
   if (reportData) {
     return (
       <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm transition-colors">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-2">
           <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center">
-            <Activity className="mr-2" size={24} />
+            <Activity className="mr-2 text-blue-500" size={24} />
             Relatório de Análise
           </h3>
           <button
             onClick={() => setReportData(null)}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
           >
             <ArrowLeft size={24} />
           </button>
+        </div>
+
+        <div className="mb-6 pb-4 border-b border-gray-100 dark:border-slate-700">
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Paciente</p>
+          <p className="text-lg font-semibold text-gray-800 dark:text-white">{reportData.patient?.name || 'Não informado'}</p>
+
+          <div className="flex items-center mt-2 text-xs text-gray-500 dark:text-gray-400">
+            <Calendar size={14} className="mr-1" />
+            <span>Período: </span>
+            <span className="ml-1 font-medium">
+              {reportData.period?.start ? new Date(reportData.period.start).toLocaleDateString() : 'Início'}
+              {' - '}
+              {reportData.period?.end ? new Date(reportData.period.end).toLocaleDateString() : 'Hoje'}
+            </span>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">

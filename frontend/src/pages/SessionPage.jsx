@@ -254,55 +254,48 @@ export default function SessionPage() {
 
                         {/* Conteúdo Modal */}
                         <div className="p-4 sm:p-6 md:p-8 overflow-y-auto">
-                            <div className="mb-6">
-                                <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">1. Queixa Principal</h3>
-                                <p className="text-gray-800 dark:text-gray-200 leading-relaxed bg-gray-50 dark:bg-slate-700/50 p-4 rounded-md">
-                                    {recordData.queixa_principal}
-                                </p>
-                            </div>
+                            {Object.entries(recordData).map(([key, value], index) => {
+                                if (['identificacao', 'id'].includes(key)) return null;
 
-                            <div className="mb-6">
-                                <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">2. Conteúdo da Sessão</h3>
-                                <p className="text-gray-800 dark:text-gray-200 leading-relaxed bg-gray-50 dark:bg-slate-700/50 p-4 rounded-md whitespace-pre-line">
-                                    {recordData.conteudo_sessao}
-                                </p>
-                            </div>
+                                const fieldLabels = {
+                                    "registro_descritivo": "Registro Descritivo",
+                                    "hipoteses_clinicas": "Hipóteses Clínicas",
+                                    "direcoes_intervencao": "Direções de Intervenção",
+                                    "descricao_demanda": "Descrição da Demanda",
+                                    "procedimento": "Procedimento",
+                                    "analise": "Análise",
+                                    "conclusao": "Conclusão",
+                                    "diagnostico_provisorio": "Diagnóstico Provisório",
+                                    "quesitos_analise": "Quesitos de Análise",
+                                    "analise_tecnica": "Análise Técnica",
+                                    "finalidade": "Finalidade",
+                                    "informacoes_atendimento": "Informações de Atendimento",
+                                    "justificativa_ausencia_ou_aptidao": "Justificativa",
+                                    "evolucao": "Evolução",
+                                    "riscos": "Riscos",
+                                    "plano_terapeutico": "Plano Terapêutico",
+                                    "queixa_principal": "Queixa Principal",
+                                    "conteudo_sessao": "Conteúdo da Sessão",
+                                    "observacoes_clinicas": "Observações Clínicas",
+                                    "intervencoes": "Intervenções"
+                                };
 
-                            <div className="mb-6">
-                                <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">3. Observações Clínicas</h3>
-                                <p className="text-blue-900 dark:text-blue-100 leading-relaxed bg-blue-50 dark:bg-blue-900/30 p-4 rounded-md border-l-4 border-blue-500">
-                                    {recordData.observacoes_clinicas}
-                                </p>
-                            </div>
+                                const label = fieldLabels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                                <div className="mb-6">
-                                    <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">4. Intervenções</h3>
-                                    <p className="text-gray-800 dark:text-gray-200 leading-relaxed bg-gray-50 dark:bg-slate-700/50 p-4 rounded-md">
-                                        {recordData.intervencoes}
-                                    </p>
-                                </div>
-                                <div className="mb-6">
-                                    <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">5. Evolução</h3>
-                                    <p className="text-gray-800 dark:text-gray-200 leading-relaxed bg-gray-50 dark:bg-slate-700/50 p-4 rounded-md">
-                                        {recordData.evolucao}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="mb-6">
-                                <h3 className="text-sm font-bold text-red-600 dark:text-red-400 uppercase tracking-wider mb-2">6. Riscos</h3>
-                                <p className="text-red-900 dark:text-red-100 leading-relaxed bg-red-50 dark:bg-red-900/30 p-4 rounded-md border-l-4 border-red-500">
-                                    {recordData.riscos}
-                                </p>
-                            </div>
-
-                            <div className="mb-6">
-                                <h3 className="text-sm font-bold text-green-600 dark:text-green-400 uppercase tracking-wider mb-2">7. Plano Terapêutico</h3>
-                                <p className="text-green-900 dark:text-green-100 leading-relaxed bg-green-50 dark:bg-green-900/30 p-4 rounded-md border-l-4 border-green-500">
-                                    {recordData.plano_terapeutico}
-                                </p>
-                            </div>
+                                return (
+                                    <div key={key} className="mb-6">
+                                        <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                                            {index + 1}. {label}
+                                        </h3>
+                                        <div className={`text-gray-800 dark:text-gray-200 leading-relaxed p-4 rounded-md whitespace-pre-line ${key === 'riscos' ? 'bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 text-red-900 dark:text-red-100' :
+                                                key === 'analise' || key === 'observacoes_clinicas' ? 'bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 text-blue-900 dark:text-blue-100' :
+                                                    'bg-gray-50 dark:bg-slate-700/50'
+                                            }`}>
+                                            {value}
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
 
                         {/* Footer Modal */}

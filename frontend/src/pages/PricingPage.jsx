@@ -105,7 +105,7 @@ export default function PricingPage() {
                     features={[
                         "Até 3 Prontuários (Sessões) por dia",
                         "Gestão básica de pacientes",
-                        "Sem acesso a IA generativa",
+                        "Análise básica com IA (3x/dia)",
                         "Sem acesso ao Agendamento"
                     ]}
                 />
