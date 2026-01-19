@@ -1,21 +1,18 @@
 -- ############################################################################
 -- THERAMIND DATABASE REBUILD (V2 - CFP COMPLIANT)
--- This script resets the entire public schema. 
--- ############################################################################
-
--- 1. CLEANUP
+hhjhjhjhjhjhjhjjhjhknhihjghggjmgjhjgkghjgjgihhiuhkuiljjkljjikyhkjnmnjbmmgkghmbn,mn,mn,jmmmjm,mjmn,mjhmjnnmmnmhmnmnmnmnmmnmnbm,b
+-- 1. CLEANUPghhnhnjhnnjgjhjhhnbhhnjhnhbjngjbngugmugugjghgjghjjhuyhnugtynjkgiouyukuhikukknvngngnjjhjjhmnmmjjjm
 DROP TABLE IF EXISTS public.appointments CASCADE;
 DROP TABLE IF EXISTS public.profiles CASCADE;
 DROP TABLE IF EXISTS public.copilot_messages CASCADE;
 DROP TABLE IF EXISTS public.copilot_conversations CASCADE;
 DROP TABLE IF EXISTS public.sessions CASCADE;
-DROP TABLE IF EXISTS public.patients CASCADE;
+DROP TABLE IF EXISTS public.patients CASCADE;ngbhnhjhhjhhjhnmjkhmhjnmnmgmngmhmhjhmjmnjhknijk,hkhljmykgkjglghjklnhklhnlh
 
 DROP FUNCTION IF EXISTS public.handle_new_user_profile CASCADE;
-DROP FUNCTION IF EXISTS public.update_updated_at_column CASCADE;
-
+.,nmnkmj,kjmmkm,j,,n,hnmk nmjnmnkjnmkkjkjl,lmlk.k,ll,..jm,,h,mmnnnjynynghtghhytytyhghhhgjbvbbvb bbvnbncnnvnn
 -- 2. CORE TABLES
-
+myjymjyjhmhjhjhjhkmgjgjgjjgjgjggjgjgkkkgkkglhkmmjmnbjbmhknhkhnn bnnbnbnjgn j
 -- PATIENTS
 CREATE TABLE public.patients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

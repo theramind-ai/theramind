@@ -103,7 +103,7 @@ export function CopilotChat({ isOpen, onClose }) {
                     </div>
                     <div>
                         <h2 className="font-bold text-gray-900 dark:text-white">Copiloto Clínico</h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Especialista em pesquisa e teoria</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Apoio ao raciocínio e conduta clínica</p>
                     </div>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -136,9 +136,9 @@ export function CopilotChat({ isOpen, onClose }) {
                         {messages.length === 0 ? (
                             <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-60">
                                 <MessageSquare className="h-16 w-16 text-indigo-300 dark:text-indigo-700 mb-4" />
-                                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Como posso ajudar em sua pesquisa?</h3>
+                                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Como posso apoiar seu raciocínio clínico?</h3>
                                 <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
-                                    Pergunte sobre conceitos teóricos, peça comparações entre autores ou solicite referências para seus estudos de caso.
+                                    Tire dúvidas sobre casos, peça auxílio em diagnósticos diferenciais ou organize suas condutas terapêuticas.
                                 </p>
                             </div>
                         ) : (
