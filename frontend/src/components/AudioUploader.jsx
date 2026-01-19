@@ -12,6 +12,7 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
 
   const [isSupported, setIsSupported] = useState(true);
   const recognitionRef = useRef(null);
+  const transcriptionRef = useRef('');
 
   // Refs to avoid closure issues in handlers
   const isRecordingRef = useRef(isRecording);
@@ -57,7 +58,9 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
 
       if (final) {
         console.log('Transcription (final):', final);
-        setTranscription(prev => prev + ' ' + final);
+        const newText = transcriptionRef.current + ' ' + final;
+        transcriptionRef.current = newText;
+        setTranscription(newText);
       }
       setInterimTranscript(interim);
     };
@@ -106,6 +109,7 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
 
     isRecordingRef.current = true;
     isPausedRef.current = false;
+    transcriptionRef.current = '';
 
     setError(null);
     setTranscription('');
@@ -156,7 +160,7 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
     setIsPaused(false);
     recognitionRef.current.stop();
 
-    const finalFullText = (transcription + ' ' + interimTranscript).trim();
+    const finalFullText = (transcriptionRef.current + ' ' + interimTranscript).trim();
 
     if (!finalFullText) {
       setStatus('idle');
@@ -225,42 +229,60 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
             <div className="absolute inset-0 rounded-full animate-ping bg-red-400/20" />
           )}
 
-          {status === 'idle' || status === 'recording' ? (
-            <div className="flex space-x-4">
-              {!isRecording ? (
-                <button
-                  onClick={startRecording}
-                  className="p-5 rounded-full text-white shadow-lg transition-all duration-200 hover:scale-110 active:scale-95 bg-blue-600 hover:bg-blue-700"
-                >
-                  <Mic size={24} />
-                </button>
-              ) : (
-                <>
-                  <button
-                    onClick={isPaused ? resumeRecording : pauseRecording}
-                    className={`p-5 rounded-full text-white shadow-lg transition-all duration-200 hover:scale-110 active:scale-95 ${isPaused ? 'bg-green-500 hover:bg-green-600' : 'bg-amber-500 hover:bg-amber-600'
-                      }`}
-                    title={isPaused ? "Retomar" : "Pausar"}
-                  >
-                    {isPaused ? <Mic size={24} /> : <div className="flex space-x-1"><div className="w-1.5 h-6 bg-white rounded-full" /><div className="w-1.5 h-6 bg-white rounded-full" /></div>}
-                  </button>
-                  <button
-                    onClick={stopRecording}
-                    className="p-5 rounded-full text-white shadow-lg transition-all duration-200 hover:scale-110 active:scale-95 bg-red-500 hover:bg-red-600"
-                    title="Finalizar"
-                  >
-                    <Square size={24} fill="white" />
-                  </button>
-                </>
-              )}
-            </div>
-          ) : status === 'success' ? (
+          {status === 'success' ? (
             <CheckCircle size={40} className="text-green-500 animate-bounce" />
           ) : status === 'error' ? (
             <AlertCircle size={40} className="text-red-500" />
-          ) : (
+          ) : status === 'analyzing' || status === 'saving' ? (
             <Loader2 size={40} className="text-blue-500 animate-spin" />
+          ) : (
+            <Mic className={`${isRecording ? (isPaused ? 'text-amber-500' : 'text-red-500') : 'text-blue-500'}`} size={32} />
           )}
+        </div>
+
+        {/* Action Controls */}
+        <div className="w-full max-w-sm">
+          {status === 'idle' || status === 'recording' ? (
+            <div className="flex flex-col space-y-4">
+              {!isRecording ? (
+                <button
+                  onClick={startRecording}
+                  className="w-full py-4 rounded-xl text-white shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-95 bg-blue-600 hover:bg-blue-700 font-bold flex items-center justify-center"
+                >
+                  <Mic size={20} className="mr-2" />
+                  INICIAR GRAVAÇÃO
+                </button>
+              ) : (
+                <div className="flex space-x-4">
+                  <button
+                    onClick={isPaused ? resumeRecording : pauseRecording}
+                    className={`flex-1 py-4 px-6 rounded-xl text-white shadow-md transition-all duration-200 hover:scale-105 active:scale-95 flex items-center justify-center font-bold ${isPaused ? 'bg-green-500 hover:bg-green-600' : 'bg-amber-500 hover:bg-amber-600'
+                      }`}
+                  >
+                    {isPaused ? <><Mic size={20} className="mr-2" /> RETOMAR</> : <><div className="flex space-x-1 mr-2"><div className="w-1.5 h-4 bg-white rounded-full" /><div className="w-1.5 h-4 bg-white rounded-full" /></div> PAUSAR</>}
+                  </button>
+
+                  <button
+                    onClick={stopRecording}
+                    className="flex-1 py-4 px-6 rounded-xl text-white shadow-md transition-all duration-200 hover:scale-105 active:scale-95 bg-red-500 hover:bg-red-600 flex items-center justify-center font-bold"
+                  >
+                    <Square size={20} className="mr-2" fill="white" />
+                    FINALIZAR
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : status === 'success' ? (
+            <div className="text-center">
+              <p className="text-green-600 font-bold mb-2">Concluido!</p>
+              <button
+                onClick={() => setStatus('idle')}
+                className="text-blue-600 hover:underline text-sm"
+              >
+                Nova análise
+              </button>
+            </div>
+          ) : null}
         </div>
 
         {/* Status Message */}
