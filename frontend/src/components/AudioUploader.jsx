@@ -72,6 +72,7 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
         setError(`Erro na transcrição: ${event.error}`);
         setStatus('error');
         setIsRecording(false);
+        isRecordingRef.current = false;
       }
     };
 
@@ -92,6 +93,7 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
 
     return () => {
       console.log('Cleaning up recognition effect...');
+      isRecordingRef.current = false;
       if (recognitionRef.current) {
         recognitionRef.current.abort();
       }
@@ -101,6 +103,9 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
   const startRecording = () => {
     if (!recognitionRef.current) return;
     console.log('Action: startRecording');
+
+    isRecordingRef.current = true;
+    isPausedRef.current = false;
 
     setError(null);
     setTranscription('');
@@ -119,14 +124,20 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
   const pauseRecording = () => {
     if (!recognitionRef.current || !isRecording) return;
     console.log('Action: pauseRecording');
+
+    isPausedRef.current = true;
     setIsPaused(true);
+
     recognitionRef.current.stop();
   };
 
   const resumeRecording = () => {
     if (!recognitionRef.current || !isRecording) return;
     console.log('Action: resumeRecording');
+
+    isPausedRef.current = false;
     setIsPaused(false);
+
     try {
       recognitionRef.current.start();
     } catch (e) {
@@ -137,6 +148,9 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
   const stopRecording = async () => {
     if (!recognitionRef.current) return;
     console.log('Action: stopRecording');
+
+    isRecordingRef.current = false;
+    isPausedRef.current = false;
 
     setIsRecording(false);
     setIsPaused(false);
