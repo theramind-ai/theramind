@@ -149,3 +149,14 @@ class CreateCheckoutSessionRequest(BaseModel):
     email: str
     plan: str
 
+
+class CRPValidationRequest(BaseModel):
+    crp: str
+
+
+class CRPValidationResponse(BaseModel):
+    valid: bool
+    exists_in_theramind: bool
+    professional_name: Optional[str] = None
+    error: Optional[str] = None
+

@@ -12,10 +12,10 @@ import json
 from .db import get_supabase_client
 from .deps import get_current_user, AuthUser
 from . import schemas
-from . import schemas
 from . import tools
 from . import subscription
 from . import payment
+from .services.cfp_service import CFPService
 
 from .report_generator import (
     calculate_sentiment_trends,
@@ -1034,6 +1034,52 @@ async def update_profile(
     if not res.data:
         raise HTTPException(status_code=500, detail="Erro ao atualizar perfil")
     return res.data[0]
+
+@app.post("/api/validate-crp", response_model=schemas.CRPValidationResponse)
+async def validate_crp(
+    body: schemas.CRPValidationRequest,
+    # user: AuthUser = Depends(get_current_user) # Comentado para permitir validação antes do login se necessário no onboarding
+):
+    supabase = get_supabase_client()
+    crp_input = body.crp.strip()
+    
+    # 1. Verificar se o CRP já existe no Theramind
+    existing = supabase.table("profiles").select("id").eq("crp", crp_input).execute()
+    exists_theramind = len(existing.data) > 0 if existing.data else False
+    
+    # 2. Tentar validar no CFP
+    uf, registro = CFPService.parse_crp_input(crp_input)
+    
+    if not uf or not registro:
+        return schemas.CRPValidationResponse(
+            valid=False,
+            exists_in_theramind=exists_theramind,
+            error="Formato de CRP inválido. Use o padrão 'Região/Número' (ex: 04/44606)."
+        )
+    
+    # Se já existe no Theramind, não precisamos nem consultar o CFP para bloquear duplicados
+    if exists_theramind:
+        return schemas.CRPValidationResponse(
+            valid=True, # Tecnicamente válido no CFP mas duplicado no Theramind
+            exists_in_theramind=True,
+            error="Este CRP já está vinculado a outro profissional no Theramind."
+        )
+
+    # Consulta externa
+    cfp_res = await CFPService.validate_crp(registro, uf)
+    
+    if cfp_res["valid"]:
+        return schemas.CRPValidationResponse(
+            valid=True,
+            exists_in_theramind=False,
+            professional_name=cfp_res["name"]
+        )
+    else:
+        return schemas.CRPValidationResponse(
+            valid=False,
+            exists_in_theramind=False,
+            error=cfp_res["error"]
+        )
 
 # --- PAYMENT & SUBSCRIPTION ENDPOINTS ---
 

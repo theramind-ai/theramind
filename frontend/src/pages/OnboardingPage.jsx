@@ -14,6 +14,9 @@ export default function OnboardingPage() {
     // Form state
     const [name, setName] = useState('');
     const [crp, setCrp] = useState('');
+    const [isCrpValid, setIsCrpValid] = useState(null); // null, true, false
+    const [crpError, setCrpError] = useState('');
+    const [validatingCrp, setValidatingCrp] = useState(false);
     const [recoveryEmail, setRecoveryEmail] = useState('');
     const [theoreticalApproach, setTheoreticalApproach] = useState('Integrativa');
     const [termsAccepted, setTermsAccepted] = useState(false);
@@ -49,6 +52,40 @@ export default function OnboardingPage() {
     const handleLogout = async () => {
         await supabase.auth.signOut();
         navigate('/login');
+    };
+
+    const handleCrpBlur = async () => {
+        if (!crp.trim()) return;
+
+        setValidatingCrp(true);
+        setCrpError('');
+        setIsCrpValid(null);
+
+        try {
+            const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const response = await fetch(`${apiBaseUrl}/api/validate-crp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ crp: crp.trim() })
+            });
+
+            if (!response.ok) throw new Error('Erro na validação');
+
+            const result = await response.json();
+
+            if (result.valid && !result.exists_in_theramind) {
+                setIsCrpValid(true);
+            } else {
+                setIsCrpValid(false);
+                setCrpError(result.error || 'CRP inválido ou já cadastrado.');
+            }
+        } catch (err) {
+            console.error('Error validating CRP:', err);
+            // Non-blocking fallback if API is down, but let's be strict for now
+            // setIsCrpValid(true); 
+        } finally {
+            setValidatingCrp(false);
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -161,13 +198,34 @@ export default function OnboardingPage() {
                             <input
                                 type="text"
                                 value={crp}
-                                onChange={(e) => setCrp(e.target.value)}
+                                onChange={(e) => {
+                                    setCrp(e.target.value);
+                                    setIsCrpValid(null);
+                                    setCrpError('');
+                                }}
+                                onBlur={handleCrpBlur}
                                 placeholder="00/00000"
-                                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${isCrpValid === true ? 'border-green-500' :
+                                        isCrpValid === false ? 'border-red-500' :
+                                            'border-slate-300 dark:border-slate-600'
+                                    }`}
                                 required
                             />
+                            {validatingCrp && (
+                                <p className="text-xs text-blue-500 mt-1 flex items-center">
+                                    <span className="animate-spin mr-1">◌</span> Validando no CFP...
+                                </p>
+                            )}
+                            {crpError && (
+                                <p className="text-xs text-red-500 mt-1">{crpError}</p>
+                            )}
+                            {isCrpValid && (
+                                <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                                    CRP validado com sucesso!
+                                </p>
+                            )}
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                Seu registro profissional será exibido nos documentos gerados.
+                                Seu registro profissional será exibido nos documentos gerados. Use o padrão Região/Número (ex: 04/44606).
                             </p>
                         </div>
 
