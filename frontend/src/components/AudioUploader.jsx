@@ -8,7 +8,7 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
   const [isPaused, setIsPaused] = useState(false);
   const [transcription, setTranscription] = useState('');
   const [interimTranscript, setInterimTranscript] = useState('');
-  const [status, setStatus] = useState('idle'); // idle, recording, analyzing, saving, success, error
+  const [status, setStatus] = useState('idle'); // idle, recording, transcribed, analyzing, saving, success, error
   const [error, setError] = useState(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
@@ -169,7 +169,8 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
       return;
     }
 
-    processTranscription(finalFullText);
+    setStatus('transcribed');
+    // processTranscription(finalFullText); // Removido o processo automático
   };
 
   const processTranscription = async (text) => {
@@ -214,6 +215,7 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
       case 'saving': return 'Salvando prontuário...';
       case 'success': return 'Sessão registrada com sucesso!';
       case 'error': return 'Ocorreu um erro.';
+      case 'transcribed': return 'Transcrição concluída';
       default: return 'Pronto para iniciar';
     }
   };
@@ -280,6 +282,22 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
                 </div>
               )}
             </div>
+          ) : status === 'transcribed' ? (
+            <div className="flex flex-col space-y-4">
+              <button
+                onClick={() => processTranscription(transcription)}
+                className="w-full py-4 rounded-xl text-white shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-95 bg-green-600 hover:bg-green-700 font-bold flex items-center justify-center"
+              >
+                <CheckCircle size={20} className="mr-2" />
+                ANALISAR AGORA
+              </button>
+              <button
+                onClick={() => setStatus('idle')}
+                className="text-slate-500 hover:text-slate-700 text-sm font-medium"
+              >
+                Descartar e gravar novamente
+              </button>
+            </div>
           ) : status === 'success' ? (
             <div className="text-center">
               <p className="text-green-600 font-bold mb-2">Concluido!</p>
@@ -303,12 +321,29 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
 
         {/* Live Transcription Preview */}
         {(isRecording || transcription) && (
-          <div className="w-full max-h-40 overflow-y-auto p-4 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 shadow-inner">
-            <p className="text-sm text-slate-700 dark:text-slate-300 italic">
-              {transcription}
-              <span className="text-slate-400 dark:text-slate-500">{interimTranscript}</span>
-              {isRecording && <span className="inline-block w-1.5 h-4 ml-1 bg-blue-500 animate-pulse align-middle" />}
-            </p>
+          <div className="w-full space-y-2">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">
+              Transcrição da Sessão {status === 'transcribed' && '(Você pode editar)'}
+            </label>
+            <div className="w-full p-4 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 shadow-inner">
+              {status === 'transcribed' ? (
+                <textarea
+                  className="w-full bg-transparent text-sm text-slate-700 dark:text-slate-300 italic focus:outline-none resize-none"
+                  rows={6}
+                  value={transcription}
+                  onChange={(e) => {
+                    setTranscription(e.target.value);
+                    transcriptionRef.current = e.target.value;
+                  }}
+                />
+              ) : (
+                <p className="text-sm text-slate-700 dark:text-slate-300 italic">
+                  {transcription}
+                  <span className="text-slate-400 dark:text-slate-500">{interimTranscript}</span>
+                  {isRecording && <span className="inline-block w-1.5 h-4 ml-1 bg-blue-500 animate-pulse align-middle" />}
+                </p>
+              )}
+            </div>
           </div>
         )}
 
