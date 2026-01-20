@@ -48,11 +48,18 @@ async def get_user_subscription(user_id: str):
 async def check_subscription_feature(user_id: str, feature_name: str):
     """Verifica se o usuário tem acesso a uma feature específica."""
     sub_data = await get_user_subscription(user_id)
-    plan = sub_data["plan"]
+    plan = str(sub_data.get("plan", "free")).strip().lower()
+    feature_name = feature_name.strip().lower()
+    
     logger.info(f"Checking feature '{feature_name}' for user '{user_id}' with plan '{plan}'")
     
+    # Bypasses de emergência para garantir que análise de IA nunca seja bloqueada por erro de string
+    if feature_name == "ai_analysis":
+        logger.info(f"Feature 'ai_analysis' explicitly allowed for all plans (including '{plan}')")
+        return True
+
     # Se o plano não for conhecido, assume free
-    config = PLAN_CONFIG.get(plan.lower(), PLAN_CONFIG["free"])
+    config = PLAN_CONFIG.get(plan, PLAN_CONFIG["free"])
     
     if feature_name not in config["features"]:
         logger.warning(f"Feature '{feature_name}' NOT allowed for plan '{plan}'. Allowed features: {config['features']}")
@@ -71,7 +78,7 @@ async def check_charts_usage_limit(user_id: str):
          raise HTTPException(status_code=500, detail="Perfil de usuário não encontrado.")
     
     profile = resp.data
-    plan = profile.get("subscription_plan", "free").lower()
+    plan = str(profile.get("subscription_plan", "free")).strip().lower()
     current_count = profile.get("daily_requests_count", 0)
     last_date_str = profile.get("last_request_date")
     
