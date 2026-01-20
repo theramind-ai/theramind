@@ -7,12 +7,15 @@ export function ProtectedRoute({ children, session }) {
     const [profileComplete, setProfileComplete] = useState(false);
     const location = useLocation();
 
-    // Reset state when session changes
+    // Reset state when session or path changes
     useEffect(() => {
         let mounted = true;
 
         async function checkProfile() {
             try {
+                // If path changed, we should show loading while we re-verify
+                setLoading(true);
+
                 if (session?.user) {
                     const { data: profile, error } = await supabase
                         .from('profiles')
@@ -46,7 +49,7 @@ export function ProtectedRoute({ children, session }) {
         }
 
         return () => { mounted = false; };
-    }, [session]);
+    }, [session, location.pathname]);
 
     if (loading) {
         return (
