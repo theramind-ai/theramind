@@ -6,7 +6,7 @@ from loguru import logger
 # --- CONFIGURAÇÃO DOS PLANOS ---
 PLAN_CONFIG = {
     "free": {
-        "daily_charts_limit": 15,
+        "daily_charts_limit": 3,
         "features": ["ai_analysis", "transcription", "audio_analysis"] # Permite análise básica e transcrição
     },
     "plus": {
@@ -36,7 +36,7 @@ async def get_user_subscription(user_id: str):
             }
         
         return {
-            "plan": profile.get("subscription_plan", "free"),
+            "plan": profile.get("subscription_plan", "free").lower(),
             "daily_count": profile.get("daily_requests_count", 0),
             "last_date": profile.get("last_request_date", date.today().isoformat())
         }
@@ -49,15 +49,18 @@ async def check_subscription_feature(user_id: str, feature_name: str):
     """Verifica se o usuário tem acesso a uma feature específica."""
     sub_data = await get_user_subscription(user_id)
     plan = sub_data["plan"]
+    logger.info(f"Checking feature '{feature_name}' for user '{user_id}' with plan '{plan}'")
     
     # Se o plano não for conhecido, assume free
-    config = PLAN_CONFIG.get(plan, PLAN_CONFIG["free"])
+    config = PLAN_CONFIG.get(plan.lower(), PLAN_CONFIG["free"])
     
     if feature_name not in config["features"]:
+        logger.warning(f"Feature '{feature_name}' NOT allowed for plan '{plan}'. Allowed features: {config['features']}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Seu plano atual ({plan.capitalize()}) não permite acesso a: {feature_name}. Atualize para Plus ou Premium."
         )
+    logger.info(f"Feature '{feature_name}' allowed for plan '{plan}'")
     return True
 
 async def check_charts_usage_limit(user_id: str):
@@ -68,7 +71,7 @@ async def check_charts_usage_limit(user_id: str):
          raise HTTPException(status_code=500, detail="Perfil de usuário não encontrado.")
     
     profile = resp.data
-    plan = profile.get("subscription_plan", "free")
+    plan = profile.get("subscription_plan", "free").lower()
     current_count = profile.get("daily_requests_count", 0)
     last_date_str = profile.get("last_request_date")
     
