@@ -103,10 +103,10 @@ export default function PricingPage() {
                     price={0}
                     planId="free"
                     features={[
-                        "Até 3 Prontuários (Sessões) por dia",
-                        "Gestão básica de pacientes",
+                        "Até 3 atendimentos por dia",
+                        "Gravação e Transcrição (3x/dia)",
                         "Análise básica com IA (3x/dia)",
-                        "Sem acesso ao Agendamento"
+                        "Gestão básica de pacientes"
                     ]}
                 />
                 <PlanCard

@@ -83,7 +83,7 @@ async def check_charts_usage_limit(user_id: str):
     if current_count >= limit:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Limite diário de prontuários atingido ({limit}). Atualize seu plano para continuar."
+            detail=f"Limite diário de atendimentos (gravações/análises) atingido ({limit}). Atualize seu plano para continuar."
         )
     return True
 
