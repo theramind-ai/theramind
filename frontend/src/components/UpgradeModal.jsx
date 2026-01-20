@@ -5,6 +5,9 @@ import { Rocket, X, Check } from 'lucide-react';
 export function UpgradeModal({ isOpen, onClose }) {
     const navigate = useNavigate();
 
+    // DESABILITADO PARA TESTES: Nunca exibir o modal de upgrade
+    return null;
+
     if (!isOpen) return null;
 
     return (

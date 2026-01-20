@@ -46,78 +46,14 @@ async def get_user_subscription(user_id: str):
         return {"plan": "free", "daily_count": 0, "last_date": date.today().isoformat()}
 
 async def check_subscription_feature(user_id: str, feature_name: str):
-    """Verifica se o usuário tem acesso a uma feature específica."""
-    sub_data = await get_user_subscription(user_id)
-    plan = str(sub_data.get("plan", "free")).strip().lower()
-    feature_name = feature_name.strip().lower()
-    
-    logger.info(f"Checking feature '{feature_name}' for user '{user_id}' with plan '{plan}'")
-    
-    # Bypasses de emergência para garantir que análise de IA nunca seja bloqueada por erro de string
-    if feature_name == "ai_analysis":
-        logger.info(f"Feature 'ai_analysis' explicitly allowed for all plans (including '{plan}')")
-        return True
-
-    # Se o plano não for conhecido, assume free
-    config = PLAN_CONFIG.get(plan, PLAN_CONFIG["free"])
-    
-    if feature_name not in config["features"]:
-        logger.warning(f"Feature '{feature_name}' NOT allowed for plan '{plan}'. Allowed features: {config['features']}")
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Seu plano atual ({plan.capitalize()}) não permite acesso a: {feature_name}. Atualize para Plus ou Premium."
-        )
-    logger.info(f"Feature '{feature_name}' allowed for plan '{plan}'")
+    """Verifica se o usuário tem acesso a uma feature específica. (DESABILITADO PARA TESTES)"""
+    logger.info(f"TEST MODE: Feature '{feature_name}' explicitly allowed for user '{user_id}'")
     return True
 
 async def check_charts_usage_limit(user_id: str):
-    """Verifica se o usuário já atingiu o limite diário, sem incrementar."""
-    supabase = get_supabase_client()
-    resp = supabase.table("profiles").select("subscription_plan, daily_requests_count, last_request_date").eq("id", user_id).single().execute()
-    if not resp.data:
-         raise HTTPException(status_code=500, detail="Perfil de usuário não encontrado.")
-    
-    profile = resp.data
-    plan = str(profile.get("subscription_plan", "free")).strip().lower()
-    current_count = profile.get("daily_requests_count", 0)
-    last_date_str = profile.get("last_request_date")
-    
-    today_str = date.today().isoformat()
-    
-    if last_date_str != today_str:
-        return True # Novo dia, limite resetado
-    
-    config = PLAN_CONFIG.get(plan, PLAN_CONFIG["free"])
-    limit = config["daily_charts_limit"]
-    
-    if current_count >= limit:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Limite diário de atendimentos (gravações/análises) atingido ({limit}). Atualize seu plano para continuar."
-        )
+    """Verifica se o usuário já atingiu o limite diário. (DESABILITADO PARA TESTES)"""
     return True
 
 async def check_and_increment_charts_usage(user_id: str):
-    """Verifica limite diário e incrementa."""
-    # Primeiro verifica sem incrementar para reusar lógica
-    await check_charts_usage_limit(user_id)
-    
-    supabase = get_supabase_client()
-    resp = supabase.table("profiles").select("daily_requests_count, last_request_date").eq("id", user_id).single().execute()
-    profile = resp.data
-    
-    current_count = profile.get("daily_requests_count", 0)
-    last_date_str = profile.get("last_request_date")
-    today_str = date.today().isoformat()
-    
-    if last_date_str != today_str:
-        current_count = 0
-    
-    new_count = current_count + 1
-    update_data = {
-        "daily_requests_count": new_count,
-        "last_request_date": today_str
-    }
-    
-    supabase.table("profiles").update(update_data).eq("id", user_id).execute()
+    """Verifica limite diário e incrementa. (DESABILITADO PARA TESTES)"""
     return True
