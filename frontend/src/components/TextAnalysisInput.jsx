@@ -46,11 +46,12 @@ export default function TextAnalysisInput({ patientId, onAnalysisComplete }) {
       }
     } catch (err) {
       console.error('Erro ao processar o texto:', err);
-      if (err.message && (err.message.includes('403') || err.message.includes('Limite diário'))) {
-        setShowUpgradeModal(true);
-      } else {
-        setError(err.message || 'Erro ao processar o texto. Tente novamente.');
+      // Silenciando erros de assinatura/limite para testes
+      if (err.message && (err.message.includes('403') || err.message.includes('Limite diário') || err.message.includes('plano'))) {
+        console.warn('Bloqueio de assinatura detectado e ignorado (Modo Teste)');
+        return;
       }
+      setError(err.message || 'Erro ao processar o texto. Tente novamente.');
     } finally {
       setIsProcessing(false);
     }

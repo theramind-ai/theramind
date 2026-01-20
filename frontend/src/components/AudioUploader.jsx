@@ -195,13 +195,14 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
 
     } catch (err) {
       console.error('Erro no processamento:', err);
-      if (err.message && (err.message.includes('403') || err.message.includes('Limite diário'))) {
-        setShowUpgradeModal(true);
+      // Silenciando erros de assinatura/limite para testes
+      if (err.message && (err.message.includes('403') || err.message.includes('Limite diário') || err.message.includes('plano'))) {
+        console.warn('Bloqueio de assinatura detectado e ignorado (Modo Teste)');
         setStatus('idle');
-      } else {
-        setError(err.message || 'Erro ao analisar a sessão. Tente novamente.');
-        setStatus('error');
+        return;
       }
+      setError(err.message || 'Erro ao analisar a sessão. Tente novamente.');
+      setStatus('error');
     }
   };
 
