@@ -169,11 +169,14 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
       return;
     }
 
+    setTranscription(finalFullText);
+    transcriptionRef.current = finalFullText;
     setStatus('transcribed');
-    // processTranscription(finalFullText); // Removido o processo automático
+    console.log('Final text saved to state:', finalFullText);
   };
 
   const processTranscription = async (text) => {
+    console.log('Starting processTranscription with text length:', text?.length);
     setStatus('analyzing');
     try {
       // 1. Analyze (CFP Prompt)
@@ -195,7 +198,7 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
       if (onUploadComplete) onUploadComplete();
 
     } catch (err) {
-      console.error('Erro no processamento:', err);
+      console.error('DEBUG: Erro no processamento:', err);
       // Silenciando erros de assinatura/limite para testes
       if (err.message && (err.message.includes('403') || err.message.includes('Limite diário') || err.message.includes('plano'))) {
         console.warn('Bloqueio de assinatura detectado e ignorado (Modo Teste)');
@@ -285,7 +288,10 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
           ) : status === 'transcribed' ? (
             <div className="flex flex-col space-y-4">
               <button
-                onClick={() => processTranscription(transcription)}
+                onClick={() => {
+                  console.log('BOTÃO ANALISAR CLICADO. Texto para enviar:', transcription);
+                  processTranscription(transcription);
+                }}
                 className="w-full py-4 rounded-xl text-white shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-95 bg-green-600 hover:bg-green-700 font-bold flex items-center justify-center"
               >
                 <CheckCircle size={20} className="mr-2" />
