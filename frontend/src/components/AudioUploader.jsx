@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Mic, Square, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import api from '../lib/api';
+import { UpgradeModal } from './UpgradeModal';
 
 export default function AudioUploader({ patientId, onUploadComplete }) {
   const [isRecording, setIsRecording] = useState(false);
@@ -9,6 +10,7 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
   const [interimTranscript, setInterimTranscript] = useState('');
   const [status, setStatus] = useState('idle'); // idle, recording, analyzing, saving, success, error
   const [error, setError] = useState(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const [isSupported, setIsSupported] = useState(true);
   const recognitionRef = useRef(null);
@@ -193,8 +195,13 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
 
     } catch (err) {
       console.error('Erro no processamento:', err);
-      setError(err.message || 'Erro ao analisar a sessão. Tente novamente.');
-      setStatus('error');
+      if (err.message && (err.message.includes('403') || err.message.includes('Limite diário'))) {
+        setShowUpgradeModal(true);
+        setStatus('idle');
+      } else {
+        setError(err.message || 'Erro ao analisar a sessão. Tente novamente.');
+        setStatus('error');
+      }
     }
   };
 
@@ -327,6 +334,11 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
           </button>
         )}
       </div>
+
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+      />
     </div>
   );
 }

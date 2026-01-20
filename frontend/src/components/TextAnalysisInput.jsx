@@ -3,12 +3,14 @@ import { useState } from 'react';
 import { Upload, Type, Mic } from 'lucide-react';
 import AudioUploader from './AudioUploader';
 import api from '../lib/api';
+import { UpgradeModal } from './UpgradeModal';
 
 export default function TextAnalysisInput({ patientId, onAnalysisComplete }) {
   const [inputMode, setInputMode] = useState('text'); // 'text' ou 'audio'
   const [textInput, setTextInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const handleTextSubmit = async (e) => {
     e.preventDefault();
@@ -44,7 +46,11 @@ export default function TextAnalysisInput({ patientId, onAnalysisComplete }) {
       }
     } catch (err) {
       console.error('Erro ao processar o texto:', err);
-      setError(err.message || 'Erro ao processar o texto. Tente novamente.');
+      if (err.message && (err.message.includes('403') || err.message.includes('Limite diário'))) {
+        setShowUpgradeModal(true);
+      } else {
+        setError(err.message || 'Erro ao processar o texto. Tente novamente.');
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -115,10 +121,15 @@ export default function TextAnalysisInput({ patientId, onAnalysisComplete }) {
       )}
 
       {error && (
-        <div className="mt-4 p-3 bg-red-50 text-red-700 rounded text-sm">
+        <div className="mt-4 p-3 bg-red-50 text-red-700 rounded text-sm font-medium border border-red-200">
           {error}
         </div>
       )}
+
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+      />
     </div>
   );
 }

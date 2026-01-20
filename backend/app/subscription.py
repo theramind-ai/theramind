@@ -6,8 +6,8 @@ from loguru import logger
 # --- CONFIGURAÇÃO DOS PLANOS ---
 PLAN_CONFIG = {
     "free": {
-        "daily_charts_limit": 3,
-        "features": ["ai_analysis"] # Permite análise básica
+        "daily_charts_limit": 15,
+        "features": ["ai_analysis", "transcription", "audio_analysis"] # Permite análise básica e transcrição
     },
     "plus": {
         "daily_charts_limit": 10,
