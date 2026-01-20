@@ -130,8 +130,8 @@ async def analyze_transcription(
     user: AuthUser = Depends(get_current_user),
 ):
     # Enforce AI Analysis permission and Daily Limit
-    await subscription.check_subscription_feature(user.user_id, "ai_analysis")
-    await subscription.check_charts_usage_limit(user.user_id)
+    # await subscription.check_subscription_feature(user.user_id, "ai_analysis")
+    # await subscription.check_charts_usage_limit(user.user_id)
     
     transcription = body.transcription
 
@@ -246,8 +246,8 @@ async def analyze_text(
     user: AuthUser = Depends(get_current_user),
 ):
     # Enforce AI Analysis permission and Daily Limit
-    await subscription.check_subscription_feature(user.user_id, "ai_analysis")
-    await subscription.check_charts_usage_limit(user.user_id)
+    # await subscription.check_subscription_feature(user.user_id, "ai_analysis")
+    # await subscription.check_charts_usage_limit(user.user_id)
     
     text = body.text
 
@@ -362,7 +362,7 @@ async def save_text_session(
     user: AuthUser = Depends(get_current_user),
 ):
     # Enforce Daily Charts Limit
-    await subscription.check_and_increment_charts_usage(user.user_id)
+    # await subscription.check_and_increment_charts_usage(user.user_id)
 
     supabase = get_supabase_client()
 
@@ -422,7 +422,7 @@ async def save_session(
     user: AuthUser = Depends(get_current_user),
 ):
     # Enforce Daily Charts Limit
-    await subscription.check_and_increment_charts_usage(user.user_id)
+    # await subscription.check_and_increment_charts_usage(user.user_id)
 
     supabase = get_supabase_client()
 
