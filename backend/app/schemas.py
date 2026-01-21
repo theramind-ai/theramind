@@ -145,9 +145,7 @@ class ProfileUpdate(BaseModel):
     crp: Optional[str] = None
     theoretical_approach: Optional[str] = None
 
-class CreateCheckoutSessionRequest(BaseModel):
-    email: str
-    plan: str
+
 
 
 class CRPValidationRequest(BaseModel):

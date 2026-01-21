@@ -44,13 +44,7 @@ CREATE TABLE public.profiles (
     terms_accepted BOOLEAN DEFAULT FALSE,
     terms_accepted_at TIMESTAMP WITH TIME ZONE,
     
-    -- Subscriptions
-    subscription_plan TEXT DEFAULT 'free' CHECK (subscription_plan IN ('free', 'plus', 'premium')),
-    stripe_customer_id TEXT,
-    subscription_status TEXT DEFAULT 'active',
-    current_period_end TIMESTAMP WITH TIME ZONE,
-    daily_requests_count INTEGER DEFAULT 0,
-    last_request_date DATE DEFAULT CURRENT_DATE,
+
     
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

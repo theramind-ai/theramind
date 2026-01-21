@@ -13,8 +13,7 @@ from .db import get_supabase_client
 from .deps import get_current_user, AuthUser
 from . import schemas
 from . import tools
-from . import subscription
-from . import payment
+
 from .services.cfp_service import CFPService
 
 from .report_generator import (
@@ -130,8 +129,8 @@ async def analyze_transcription(
     user: AuthUser = Depends(get_current_user),
 ):
     # Enforce AI Analysis permission and Daily Limit
-    # await subscription.check_subscription_feature(user.user_id, "ai_analysis")
-    # await subscription.check_charts_usage_limit(user.user_id)
+    # Enforce AI Analysis permission and Daily Limit
+    # Removed subscription checks
     
     transcription = body.transcription
 
@@ -246,8 +245,8 @@ async def analyze_text(
     user: AuthUser = Depends(get_current_user),
 ):
     # Enforce AI Analysis permission and Daily Limit
-    # await subscription.check_subscription_feature(user.user_id, "ai_analysis")
-    # await subscription.check_charts_usage_limit(user.user_id)
+    # Enforce AI Analysis permission and Daily Limit
+    # Removed subscription checks
     
     text = body.text
 
@@ -362,7 +361,8 @@ async def save_text_session(
     user: AuthUser = Depends(get_current_user),
 ):
     # Enforce Daily Charts Limit
-    # await subscription.check_and_increment_charts_usage(user.user_id)
+    # Enforce Daily Charts Limit
+    # Removed usage limit checks
 
     supabase = get_supabase_client()
 
@@ -422,7 +422,8 @@ async def save_session(
     user: AuthUser = Depends(get_current_user),
 ):
     # Enforce Daily Charts Limit
-    # await subscription.check_and_increment_charts_usage(user.user_id)
+    # Enforce Daily Charts Limit
+    # Removed usage limit checks
 
     supabase = get_supabase_client()
 
@@ -1083,15 +1084,3 @@ async def validate_crp(
             error=cfp_res["error"]
         )
 
-# --- PAYMENT & SUBSCRIPTION ENDPOINTS ---
-
-@app.post("/api/create-checkout-session")
-async def create_checkout_session(
-    body: schemas.CreateCheckoutSessionRequest,
-    user: AuthUser = Depends(get_current_user),
-):
-    return await payment.create_checkout_session(user.user_id, body.email, body.plan)
-
-@app.post("/api/webhook")
-async def stripe_webhook(request: Request):
-    return await payment.handle_stripe_webhook(request)
