@@ -15,6 +15,7 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
   const [isSupported, setIsSupported] = useState(true);
   const recognitionRef = useRef(null);
   const transcriptionRef = useRef('');
+  const processedResultsRef = useRef(new Set());
 
   // Refs to avoid closure issues in handlers
   const isRecordingRef = useRef(isRecording);
@@ -51,10 +52,21 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
       let final = '';
 
       for (let i = event.resultIndex; i < event.results.length; ++i) {
-        if (event.results[i].isFinal) {
-          final += event.results[i][0].transcript;
+        const result = event.results[i];
+        // Create unique ID based on index and transcript to detect duplicates
+        const resultId = `${i}-${result[0].transcript}`;
+
+        if (result.isFinal) {
+          // Only add if not already processed
+          if (!processedResultsRef.current.has(resultId)) {
+            final += result[0].transcript;
+            processedResultsRef.current.add(resultId);
+            console.log('New final result added:', resultId);
+          } else {
+            console.log('Duplicate result skipped:', resultId);
+          }
         } else {
-          interim += event.results[i][0].transcript;
+          interim += result[0].transcript;
         }
       }
 
@@ -112,6 +124,7 @@ export default function AudioUploader({ patientId, onUploadComplete }) {
     isRecordingRef.current = true;
     isPausedRef.current = false;
     transcriptionRef.current = '';
+    processedResultsRef.current.clear(); // Clear processed results history
 
     setError(null);
     setTranscription('');

@@ -71,11 +71,18 @@ export default function SessionPage() {
         try {
             setGeneratingRecord(true);
             const response = await api.get(`/session/${sessionId}/record?format=json&document_type=${documentType}`);
+
+            console.log('Record data received:', response); // Debug
+
+            if (!response || typeof response !== 'object') {
+                throw new Error('Resposta inválida do servidor');
+            }
+
             setRecordData(response);
             setViewingRecord(true);
         } catch (err) {
             console.error('Erro ao gerar prontuário:', err);
-            alert('Erro ao gerar prontuário. Tente novamente.');
+            alert('Erro ao gerar prontuário para visualização. Tente novamente ou baixe o PDF.');
         } finally {
             setGeneratingRecord(false);
         }
@@ -254,48 +261,59 @@ export default function SessionPage() {
 
                         {/* Conteúdo Modal */}
                         <div className="p-4 sm:p-6 md:p-8 overflow-y-auto">
-                            {Object.entries(recordData).map(([key, value], index) => {
-                                if (['identificacao', 'id'].includes(key)) return null;
+                            {!recordData || Object.keys(recordData).length === 0 ? (
+                                <div className="text-center py-8">
+                                    <p className="text-gray-500 dark:text-gray-400">
+                                        Nenhum dado disponível para visualização.
+                                    </p>
+                                </div>
+                            ) : (
+                                Object.entries(recordData)
+                                    .filter(([key, value]) => {
+                                        // Filtra campos vazios e de identificação
+                                        return !['identificacao', 'id'].includes(key) && value != null && value !== '';
+                                    })
+                                    .map(([key, value], index) => {
+                                        const fieldLabels = {
+                                            "registro_descritivo": "Registro Descritivo",
+                                            "hipoteses_clinicas": "Hipóteses Clínicas",
+                                            "direcoes_intervencao": "Direções de Intervenção",
+                                            "descricao_demanda": "Descrição da Demanda",
+                                            "procedimento": "Procedimento",
+                                            "analise": "Análise",
+                                            "conclusao": "Conclusão",
+                                            "diagnostico_provisorio": "Diagnóstico Provisório",
+                                            "quesitos_analise": "Quesitos de Análise",
+                                            "analise_tecnica": "Análise Técnica",
+                                            "finalidade": "Finalidade",
+                                            "informacoes_atendimento": "Informações de Atendimento",
+                                            "justificativa_ausencia_ou_aptidao": "Justificativa",
+                                            "evolucao": "Evolução",
+                                            "riscos": "Riscos",
+                                            "plano_terapeutico": "Plano Terapêutico",
+                                            "queixa_principal": "Queixa Principal",
+                                            "conteudo_sessao": "Conteúdo da Sessão",
+                                            "observacoes_clinicas": "Observações Clínicas",
+                                            "intervencoes": "Intervenções"
+                                        };
 
-                                const fieldLabels = {
-                                    "registro_descritivo": "Registro Descritivo",
-                                    "hipoteses_clinicas": "Hipóteses Clínicas",
-                                    "direcoes_intervencao": "Direções de Intervenção",
-                                    "descricao_demanda": "Descrição da Demanda",
-                                    "procedimento": "Procedimento",
-                                    "analise": "Análise",
-                                    "conclusao": "Conclusão",
-                                    "diagnostico_provisorio": "Diagnóstico Provisório",
-                                    "quesitos_analise": "Quesitos de Análise",
-                                    "analise_tecnica": "Análise Técnica",
-                                    "finalidade": "Finalidade",
-                                    "informacoes_atendimento": "Informações de Atendimento",
-                                    "justificativa_ausencia_ou_aptidao": "Justificativa",
-                                    "evolucao": "Evolução",
-                                    "riscos": "Riscos",
-                                    "plano_terapeutico": "Plano Terapêutico",
-                                    "queixa_principal": "Queixa Principal",
-                                    "conteudo_sessao": "Conteúdo da Sessão",
-                                    "observacoes_clinicas": "Observações Clínicas",
-                                    "intervencoes": "Intervenções"
-                                };
+                                        const label = fieldLabels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
-                                const label = fieldLabels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-
-                                return (
-                                    <div key={key} className="mb-6">
-                                        <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-                                            {index + 1}. {label}
-                                        </h3>
-                                        <div className={`text-gray-800 dark:text-gray-200 leading-relaxed p-4 rounded-md whitespace-pre-line ${key === 'riscos' ? 'bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 text-red-900 dark:text-red-100' :
-                                                key === 'analise' || key === 'observacoes_clinicas' ? 'bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 text-blue-900 dark:text-blue-100' :
-                                                    'bg-gray-50 dark:bg-slate-700/50'
-                                            }`}>
-                                            {value}
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                                        return (
+                                            <div key={key} className="mb-6">
+                                                <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                                                    {index + 1}. {label}
+                                                </h3>
+                                                <div className={`text-gray-800 dark:text-gray-200 leading-relaxed p-4 rounded-md whitespace-pre-line ${key === 'riscos' ? 'bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 text-red-900 dark:text-red-100' :
+                                                        key === 'analise' || key === 'observacoes_clinicas' ? 'bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 text-blue-900 dark:text-blue-100' :
+                                                            'bg-gray-50 dark:bg-slate-700/50'
+                                                    }`}>
+                                                    {String(value)}
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                            )}
                         </div>
 
                         {/* Footer Modal */}
