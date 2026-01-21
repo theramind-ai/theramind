@@ -33,15 +33,25 @@ origins_env = os.getenv("BACKEND_CORS_ORIGINS", "")
 origins: List[str] = [
     origin.strip() for origin in origins_env.split(",") if origin.strip()
 ]
-if not origins:
-    origins = ["http://localhost:3000"]
+
+# Configuração robusta para CORS
+cors_params = {
+    "allow_credentials": True,
+    "allow_methods": ["*"],
+    "allow_headers": ["*"],
+}
+
+if not origins or "*" in origins:
+    # Se não houver origens definidas ou houver wildcard, 
+    # usamos regex para permitir qualquer origem de forma compatível com credentials
+    cors_params["allow_origin_regex"] = "https?://.*"
+    cors_params["allow_origins"] = [] # Regex tem precedência ou substitui
+else:
+    cors_params["allow_origins"] = origins
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    **cors_params
 )
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
