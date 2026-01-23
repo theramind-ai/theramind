@@ -584,16 +584,7 @@ async def get_session_record(
     format: str = "pdf",
     document_type: str = "registro_documental",
     user: AuthUser = Depends(get_current_user),
-                            # Tratamento específico para erro de rate limit da OpenAI
-                            if hasattr(e, 'status_code') and getattr(e, 'status_code', None) == 429:
-                                logger.error(f"Erro análise GPT (rate limit): {e}")
-                                raise HTTPException(status_code=429, detail="Limite de requisições da OpenAI atingido. Tente novamente em alguns minutos.")
-                            # Tratamento para resposta da OpenAI com mensagem de rate limit
-                            if hasattr(e, 'args') and e.args and 'rate limit' in str(e.args[0]).lower():
-                                logger.error(f"Erro análise GPT (rate limit): {e}")
-                                raise HTTPException(status_code=429, detail="Limite de requisições da OpenAI atingido. Tente novamente em alguns minutos.")
-                            logger.error(f"Erro análise GPT: {e}")
-                            raise HTTPException(status_code=500, detail="Erro ao analisar texto")
+):
     supabase = get_supabase_client()
 
     session = (
