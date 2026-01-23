@@ -456,7 +456,7 @@ async def save_session(
     # For legacy compatibility, combine insights if using old format
     if body.insights and not body.hipoteses_clinicas:
         hipoteses_clinicas = body.insights
-    
+    # Definir themes_text sempre antes de usar
     themes_text = ", ".join(temas_relevantes)
     full_insights = f"{hipoteses_clinicas}\n\n{direcoes_intervencao}\n\nTemas recorrentes: {themes_text}"
     audio_url_value = str(body.audio_url) if body.audio_url is not None else None
