@@ -213,7 +213,7 @@ async def analyze_transcription(
         # Prepare Gemini Prompt
         prompt = f"{system_prompt}\n\n{registro_prompt}\n\n{hipoteses_prompt}\n\n{intervencoes_prompt}\n\nTranscrição completa da sessão:\n{transcription}\n\nResponda apenas em JSON."
 
-        model = genai.GenerativeModel('gemini-1.5-pro', generation_config={"response_mime_type": "application/json"})
+        model = genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
         response = model.generate_content(prompt)
         
         content = response.text or "{}"
@@ -315,7 +315,7 @@ async def analyze_text(
         # Prepare Gemini Prompt
         prompt = f"{system_prompt}\n\n{registro_prompt}\n\n{hipoteses_prompt}\n\n{intervencoes_prompt}\n\nTexto completo da sessão:\n{text}\n\nResponda apenas em JSON."
 
-        model = genai.GenerativeModel('gemini-1.5-flash', generation_config={"response_mime_type": "application/json"})
+        model = genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
         response = model.generate_content(prompt)
 
         content = response.text or "{}"
@@ -862,7 +862,7 @@ LINGUAGEM OBRIGATÓRIA:
     # 6. Loop de execução de ferramentas (multi-turn) usando Gemini
     # Usamos gemini-2.5-flash para o Copilot por ser mais rápido e eficiente para chat interativo.
     model = genai.GenerativeModel(
-        model_name='gemini-1.5-flash',
+        model_name='gemini-2.5-flash',
         system_instruction=messages[0]["content"],
         tools=[
             tools.search_patients,
@@ -966,7 +966,7 @@ LINGUAGEM OBRIGATÓRIA:
     # Atualiza titulo se for a primeira troca
     if len(history_res.data) <= 2:
         try:
-             title_model = genai.GenerativeModel('gemini-1.5-flash')
+             title_model = genai.GenerativeModel('gemini-2.5-flash')
              title_prompt = f"Resuma a mensagem do usuário em um título curto de 3-5 palavras para uma conversa: {body.message}"
              title_res = title_model.generate_content(title_prompt)
              new_title = title_res.text.strip().strip('"')
