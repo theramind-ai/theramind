@@ -315,7 +315,7 @@ async def analyze_text(
         # Prepare Gemini Prompt
         prompt = f"{system_prompt}\n\n{registro_prompt}\n\n{hipoteses_prompt}\n\n{intervencoes_prompt}\n\nTexto completo da sessão:\n{text}\n\nResponda apenas em JSON."
 
-        model = genai.GenerativeModel('gemini-1.5-pro', generation_config={"response_mime_type": "application/json"})
+        model = genai.GenerativeModel('gemini-1.5-flash', generation_config={"response_mime_type": "application/json"})
         response = model.generate_content(prompt)
 
         content = response.text or "{}"
