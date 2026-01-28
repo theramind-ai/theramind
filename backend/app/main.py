@@ -56,6 +56,7 @@ app.add_middleware(
 
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 BUCKET = os.getenv("SUPABASE_BUCKET", "theramind")
+MAX_ITERATIONS = 10
 
 # NUNCA logar conteúdo sensível: só metadados
 logger.add(
