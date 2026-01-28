@@ -2,6 +2,8 @@ from datetime import datetime, timedelta
 from collections import defaultdict, Counter
 from typing import List, Dict, Any
 import re
+import google.generativeai as genai
+import json
 from datetime import datetime
 
 # Padrões para análise de tópicos
@@ -193,7 +195,6 @@ def calculate_session_frequency(sessions: List[Dict[str, Any]]) -> Dict[str, Any
 def generate_clinical_record_content(
     session_data: Dict[str, Any], 
     patient_data: Dict[str, Any], 
-    client: Any, 
     document_type: str = "registro_documental",
     approach: str = "Integrativa"
 ) -> Dict[str, Any]:
@@ -236,17 +237,13 @@ def generate_clinical_record_content(
     3. Conclusão: Sempre condicional, sugerindo encaminhamentos ou próximos passos.
     """
     
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ],
-        response_format={"type": "json_object"}
-    )
+    # Use Gemini
+    prompt = f"{system_prompt}\n\n{user_prompt}\n\nResponda apenas em JSON."
     
-    import json
-    return json.loads(response.choices[0].message.content)
+    model = genai.GenerativeModel('gemini-1.5-flash', generation_config={"response_mime_type": "application/json"})
+    response = model.generate_content(prompt)
+    
+    return json.loads(response.text)
 
 def generate_clinical_record_pdf(
     record_data: Dict[str, Any], 

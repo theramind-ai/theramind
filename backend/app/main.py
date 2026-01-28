@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends, status, Response, Request
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
-from openai import OpenAI
+import google.generativeai as genai
 import json
 
 from .db import get_supabase_client
@@ -54,7 +54,7 @@ app.add_middleware(
     **cors_params
 )
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 BUCKET = os.getenv("SUPABASE_BUCKET", "theramind")
 
 # NUNCA logar conteúdo sensível: só metadados
@@ -206,27 +206,13 @@ async def analyze_transcription(
             "Escreva de forma narrativa e profissional."
         )
 
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {
-                "role": "user",
-                "content": (
-                    f"{registro_prompt}\n\n{hipoteses_prompt}\n\n{intervencoes_prompt}\n\n"
-                    "Transcrição completa da sessão (NÃO logar este conteúdo em lugar nenhum):\n"
-                    f"{transcription}\n\n"
-                    "Responda apenas em JSON válido, por exemplo:\n"
-                    '{ "registro_descritivo": "...", "hipoteses_clinicas": "...", "direcoes_intervencao": "...", "temas_relevantes": ["tema1", "tema2"] }'
-                ),
-            },
-        ]
+        # Prepare Gemini Prompt
+        prompt = f"{system_prompt}\n\n{registro_prompt}\n\n{hipoteses_prompt}\n\n{intervencoes_prompt}\n\nTranscrição completa da sessão:\n{transcription}\n\nResponda apenas em JSON."
 
-        completion = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=messages,
-            response_format={"type": "json_object"},
-        )
-
-        content = completion.choices[0].message.content or "{}"
+        model = genai.GenerativeModel('gemini-1.5-flash', generation_config={"response_mime_type": "application/json"})
+        response = model.generate_content(prompt)
+        
+        content = response.text or "{}"
         data = json.loads(content)
 
         registro_descritivo = data.get("registro_descritivo", "")
@@ -322,27 +308,13 @@ async def analyze_text(
             "Escreva de forma narrativa e profissional."
         )
 
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {
-                "role": "user",
-                "content": (
-                    f"{registro_prompt}\n\n{hipoteses_prompt}\n\n{intervencoes_prompt}\n\n"
-                    "Texto completo da sessão (NÃO logar este conteúdo em lugar nenhum):\n"
-                    f"{text}\n\n"
-                    "Responda apenas em JSON válido, por exemplo:\n"
-                    '{ "registro_descritivo": "...", "hipoteses_clinicas": "...", "direcoes_intervencao": "...", "temas_relevantes": ["tema1", "tema2"] }'
-                ),
-            },
-        ]
+        # Prepare Gemini Prompt
+        prompt = f"{system_prompt}\n\n{registro_prompt}\n\n{hipoteses_prompt}\n\n{intervencoes_prompt}\n\nTexto completo da sessão:\n{text}\n\nResponda apenas em JSON."
 
-        completion = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=messages,
-            response_format={"type": "json_object"},
-        )
+        model = genai.GenerativeModel('gemini-1.5-flash', generation_config={"response_mime_type": "application/json"})
+        response = model.generate_content(prompt)
 
-        content = completion.choices[0].message.content or "{}"
+        content = response.text or "{}"
         data = json.loads(content)
 
         registro_descritivo = data.get("registro_descritivo", "")
@@ -622,7 +594,6 @@ async def get_session_record(
         content = generate_clinical_record_content(
             session_data=session.data,
             patient_data=patient.data,
-            client=client,
             document_type=document_type,
             approach=approach
         )
