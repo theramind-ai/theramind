@@ -4,24 +4,26 @@ WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV PORT=10000
 
-RUN echo "Acquire::Retries \"3\";" > /etc/apt/apt.conf.d/80-retries && \
-    echo "Acquire::http::Timeout \"120\";" >> /etc/apt/apt.conf.d/80-retries && \
-    apt-get update && \
+RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        build-essential \
-        libffi-dev \
-        libssl-dev \
-        libfreetype6-dev \
-        libjpeg-dev && \
+    build-essential \
+    libffi-dev \
+    libssl-dev \
+    libfreetype6-dev \
+    libjpeg-dev && \
     rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copia o código da aplicação
 COPY app ./app
 
-ENV PORT=8000
-EXPOSE 8000
+# Porta que o Render geralmente usa (10000 é o padrão do Render, mas ele fornece a variável PORT)
+EXPOSE 10000
 
-CMD sh -c "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"
+# Comando para rodar a aplicação usando uvicorn
+# Usamos a porta definida pelo Render ou fallback para 10000
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-10000}

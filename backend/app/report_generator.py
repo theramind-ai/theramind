@@ -240,7 +240,7 @@ def generate_clinical_record_content(
     # Use Gemini
     prompt = f"{system_prompt}\n\n{user_prompt}\n\nResponda apenas em JSON."
     
-    model = genai.GenerativeModel('gemini-2.5-pro', generation_config={"response_mime_type": "application/json"})
+    model = genai.GenerativeModel('gemini-1.5-pro', generation_config={"response_mime_type": "application/json"})
     response = model.generate_content(prompt)
     
     return json.loads(response.text)
