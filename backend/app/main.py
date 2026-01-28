@@ -209,7 +209,7 @@ async def analyze_transcription(
         # Prepare Gemini Prompt
         prompt = f"{system_prompt}\n\n{registro_prompt}\n\n{hipoteses_prompt}\n\n{intervencoes_prompt}\n\nTranscrição completa da sessão:\n{transcription}\n\nResponda apenas em JSON."
 
-        model = genai.GenerativeModel('gemini-1.5-flash', generation_config={"response_mime_type": "application/json"})
+        model = genai.GenerativeModel('gemini-2.5-pro', generation_config={"response_mime_type": "application/json"})
         response = model.generate_content(prompt)
         
         content = response.text or "{}"
@@ -311,7 +311,7 @@ async def analyze_text(
         # Prepare Gemini Prompt
         prompt = f"{system_prompt}\n\n{registro_prompt}\n\n{hipoteses_prompt}\n\n{intervencoes_prompt}\n\nTexto completo da sessão:\n{text}\n\nResponda apenas em JSON."
 
-        model = genai.GenerativeModel('gemini-1.5-flash', generation_config={"response_mime_type": "application/json"})
+        model = genai.GenerativeModel('gemini-2.5-pro', generation_config={"response_mime_type": "application/json"})
         response = model.generate_content(prompt)
 
         content = response.text or "{}"
@@ -855,41 +855,58 @@ LINGUAGEM OBRIGATÓRIA:
     if not is_last_msg_current:
          messages.append({"role": "user", "content": body.message})
 
-    # 6. Loop de execução de ferramentas (multi-turn)
-    # Permite que o modelo chame "search" -> receba resultado -> chame "create" -> receba resultado -> resposta final
+    # 6. Loop de execução de ferramentas (multi-turn) usando Gemini
+    # Usamos gemini-2.5-flash para o Copilot por ser mais rápido e eficiente para chat interativo.
+    model = genai.GenerativeModel(
+        model_name='gemini-2.5-flash',
+        system_instruction=messages[0]["content"],
+        tools=[
+            tools.search_patients,
+            tools.create_patient,
+            tools.create_appointment,
+            tools.create_session_note
+        ]
+    )
     
-    final_reply = ""
-    MAX_ITERATIONS = 5
-    iteration = 0
+    # Prepara o histórico para o formato do Gemini
+    # Gemini usa 'user' e 'model'. No histórico do banco temos 'user' e 'assistant'.
+    gemini_history = []
+    if history_res.data:
+        for msg in history_res.data:
+            role = "user" if msg["role"] == "user" else "model"
+            gemini_history.append({"role": role, "parts": [msg["content"]]})
+    
+    # Inicia chat com o histórico
+    chat = model.start_chat(history=gemini_history)
     
     try:
+        # Envia a mensagem atual. 
+        # O Gemini SDK pode lidar com a execução automática de ferramentas se passarmos enable_automatic_function_calling=False
+        # Mas como precisamos injetar o user_id, faremos o controle manual das chamadas.
+        
+        response = chat.send_message(body.message)
+        
+        iteration = 0
         while iteration < MAX_ITERATIONS:
             iteration += 1
             
-            # Chama o modelo
-            completion = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=messages,
-                tools=TOOLS_SCHEMA,
-                tool_choice="auto", 
-            )
+            # Verifica se há chamadas de função na resposta
+            # No SDK do Gemini, as chamadas ficam em response.candidates[0].content.parts
+            function_calls = [part.function_call for part in response.candidates[0].content.parts if part.function_call]
             
-            response_message = completion.choices[0].message
-            tool_calls = response_message.tool_calls
-            
-            # Se não houver tool calls, é a resposta final (ou pergunta ao usuário)
-            if not tool_calls:
-                final_reply = response_message.content
+            if not function_calls:
+                # Se não houver chamadas, a resposta final está no texto
+                final_reply = response.text
                 break
             
-            # Se houver tool calls, processa
-            messages.append(response_message) # Adiciona a intenção do assistente ao histórico
-            
-            for tool_call in tool_calls:
-                function_name = tool_call.function.name
-                function_args = json.loads(tool_call.function.arguments)
+            # Se houver chamadas, processa cada uma
+            tool_responses = {}
+            for fc in function_calls:
+                function_name = fc.name
+                # Converte os argumentos (que vêm como Map/Proto) para dict
+                function_args = {arg: val for arg, val in fc.args.items()}
                 
-                logger.info(f"TOOL CALL: {function_name} | ARGS: {function_args}")
+                logger.info(f"GEMINI TOOL CALL: {function_name} | ARGS: {function_args}")
                 
                 tool_output = f"Erro: Ferramenta {function_name} desconhecida."
                 
@@ -906,8 +923,8 @@ LINGUAGEM OBRIGATÓRIA:
                     elif function_name == "create_appointment":
                         tool_output = tools.create_appointment(
                             function_args.get("patient_id"),
-                            function_args.get("date"),
-                            function_args.get("time"),
+                            function_args.get("date_str") or function_args.get("date"), # Suporta variação de nome
+                            function_args.get("time_str") or function_args.get("time"),
                             function_args.get("duration_minutes", 50),
                             function_args.get("price", 150.0),
                             user.user_id
@@ -922,16 +939,15 @@ LINGUAGEM OBRIGATÓRIA:
                     tool_output = f"Erro na execução da ferramenta: {str(e)}"
                     logger.error(f"Tool Execution Error: {e}")
                 
-                # Adiciona resultado ao histórico
-                messages.append({
-                    "tool_call_id": tool_call.id,
-                    "role": "tool",
-                    "name": function_name,
-                    "content": str(tool_output)
-                })
-            
-            # Loop continua para a próxima iteração (modelo vai ler os outputs e decidir o próximo passo)
+                tool_responses[function_name] = tool_output
 
+            # Envia as respostas das ferramentas de volta para o modelo
+            # No Gemini SDK, enviamos uma lista de partes com as respostas
+            response = chat.send_message([
+                genai.protos.Part(function_response=genai.protos.FunctionResponse(name=name, response={"result": str(out)}))
+                for name, out in tool_responses.items()
+            ])
+            
     except Exception as e:
         logger.error(f"Erro no chat copilot: {e}")
         final_reply = "Desculpe, ocorreu um erro ao processar sua mensagem. Tente novamente."
@@ -946,16 +962,13 @@ LINGUAGEM OBRIGATÓRIA:
     # Atualiza titulo se for a primeira troca
     if len(history_res.data) <= 2:
         try:
-             title_comp = client.chat.completions.create(
-                 model="gpt-4o-mini",
-                 messages=[
-                     {"role": "system", "content": "Resuma a mensagem do usuário em um título curto de 3-5 palavras para uma conversa."},
-                     {"role": "user", "content": body.message}
-                 ]
-             )
-             new_title = title_comp.choices[0].message.content.strip('"')
+             title_model = genai.GenerativeModel('gemini-2.5-flash')
+             title_prompt = f"Resuma a mensagem do usuário em um título curto de 3-5 palavras para uma conversa: {body.message}"
+             title_res = title_model.generate_content(title_prompt)
+             new_title = title_res.text.strip().strip('"')
              supabase.table("copilot_conversations").update({"title": new_title}).eq("id", conversation_id).execute()
-        except:
+        except Exception as e:
+            logger.error(f"Erro ao gerar título: {e}")
             pass
 
     return schemas.CopilotResponse(conversation_id=conversation_id, reply=final_reply)
