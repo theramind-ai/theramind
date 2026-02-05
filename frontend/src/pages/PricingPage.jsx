@@ -15,14 +15,14 @@ export default function PricingPage() {
                 {isPopular && <div className="text-sm text-blue-500 font-bold mb-2 uppercase tracking-wide">Mais Popular</div>}
                 <h3 className="text-2xl font-bold mb-2 dark:text-white">{title}</h3>
                 <div className="text-4xl font-bold mb-6 dark:text-white">
-                    {price === 0 ? "Grátis" : <>R$ {price}<span className="text-base font-normal text-gray-500">/mês</span></>}
+                    {price === 0 ? "Grátis" : <>R$ {price}<span className="text-base font-normal text-slate-600">/mês</span></>}
                 </div>
 
                 <ul className="flex-1 space-y-4 mb-8">
                     {features.map((f, i) => (
                         <li key={i} className="flex items-start">
                             <Check className="text-green-500 mr-2 flex-shrink-0" size={20} />
-                            <span className="text-gray-600 dark:text-gray-300 text-sm">{f}</span>
+                            <span className="text-slate-700 dark:text-gray-300 text-sm">{f}</span>
                         </li>
                     ))}
                 </ul>
@@ -40,7 +40,7 @@ export default function PricingPage() {
     return (
         <div className="container mx-auto p-8 max-w-6xl">
             <h1 className="text-3xl font-bold text-center mb-4 dark:text-white">Planos e Assinaturas</h1>
-            <p className="text-center text-gray-500 mb-12 max-w-2xl mx-auto">
+            <p className="text-center text-slate-600 mb-12 max-w-2xl mx-auto">
                 Todos os recursos estão liberados neste ambiente.
             </p>
 

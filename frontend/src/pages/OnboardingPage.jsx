@@ -162,13 +162,13 @@ export default function OnboardingPage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-950 flex items-center justify-center px-4 transition-colors duration-200">
             <div className="w-full max-w-xl">
-                <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
+                <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 dark:border-slate-700/50 p-8">
                     <div className="text-center mb-8">
                         <Logo />
                         <h1 className="text-2xl font-bold text-slate-900 dark:text-white mt-6">
                             Bem-vindo ao TheraMind!
                         </h1>
-                        <p className="text-slate-600 dark:text-slate-300 mt-2">
+                        <p className="text-slate-700 dark:text-slate-300 mt-2">
                             Para começar, precisamos de algumas informações para criar seu perfil profissional.
                         </p>
                     </div>
@@ -206,8 +206,8 @@ export default function OnboardingPage() {
                                 onBlur={handleCrpBlur}
                                 placeholder="00/00000"
                                 className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${isCrpValid === true ? 'border-green-500' :
-                                        isCrpValid === false ? 'border-red-500' :
-                                            'border-slate-300 dark:border-slate-600'
+                                    isCrpValid === false ? 'border-red-500' :
+                                        'border-slate-300 dark:border-slate-600'
                                     }`}
                                 required
                             />
@@ -224,7 +224,7 @@ export default function OnboardingPage() {
                                     CRP validado com sucesso!
                                 </p>
                             )}
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
                                 Seu registro profissional será exibido nos documentos gerados. Use o padrão Região/Número (ex: 04/44606).
                             </p>
                         </div>
@@ -260,7 +260,7 @@ export default function OnboardingPage() {
                                 <option value="Analítica">Psicologia Analítica (Junguiana)</option>
                                 <option value="Sistêmica">Terapia Sistêmica</option>
                             </select>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
                                 Isso ajudará a IA a personalizar as análises de acordo com sua linha de trabalho.
                             </p>
                         </div>

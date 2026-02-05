@@ -47,7 +47,7 @@ export default function LoginPage() {
           <div className="text-center mb-8">
             <Logo />
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white mt-6">TheraMind</h1>
-            <p className="text-slate-600 dark:text-slate-400 mt-2">
+            <p className="text-slate-700 dark:text-slate-400 mt-2">
               {isLogin ? 'Bem-vindo de volta' : 'Crie sua conta'}
             </p>
           </div>
